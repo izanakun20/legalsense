@@ -44,6 +44,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Parse File Route Error:", error);
     const safeMsg = getUserSafeErrorMessage(error, "Failed to parse the uploaded file.");
-    return NextResponse.json({ error: safeMsg }, { status: 500 });
+    const isCorrupt = error instanceof Error && error.message.includes('corrupted or improperly formatted');
+    return NextResponse.json({ error: isCorrupt ? error.message : safeMsg }, { status: isCorrupt ? 400 : 500 });
   }
 }
