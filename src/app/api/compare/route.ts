@@ -23,7 +23,7 @@ const compareSchema = z.object({
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (isRateLimited(ip)) {
+    if (await isRateLimited(ip)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -32,10 +32,23 @@ export async function POST(req: Request) {
 
     const result = await generateStructuredResponse(COMPARE_PROMPT(doc1Text, doc2Text), compareSchema);
 
+    // Verify quotes
+    result.changes.forEach(change => {
+      if (change.quoteDoc1 && !doc1Text.includes(change.quoteDoc1)) {
+        change.quoteDoc1 = null;
+      }
+      if (change.quoteDoc2 && !doc2Text.includes(change.quoteDoc2)) {
+        change.quoteDoc2 = null;
+      }
+    });
+
     console.log(sanitizeLogSnippet({ action: "Documents compared" }));
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors }, { status: 400 });
+    }
     const safeMsg = getUserSafeErrorMessage(error, "Failed to compare documents.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });
   }

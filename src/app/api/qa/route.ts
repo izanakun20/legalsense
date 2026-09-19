@@ -20,7 +20,7 @@ const qaSchema = z.object({
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (isRateLimited(ip)) {
+    if (await isRateLimited(ip)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -29,10 +29,18 @@ export async function POST(req: Request) {
 
     const result = await generateStructuredResponse(QA_PROMPT(documentText, question), qaSchema);
 
+    // Verify citation to prevent hallucinated quotes
+    if (result.quote && !documentText.includes(result.quote)) {
+      result.quote = null; // drop hallucinated quote
+    }
+
     console.log(sanitizeLogSnippet({ action: "Q&A answered" }));
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors }, { status: 400 });
+    }
     const safeMsg = getUserSafeErrorMessage(error, "Failed to answer question.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });
   }

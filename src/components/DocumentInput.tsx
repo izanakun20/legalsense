@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { UploadCloud } from "lucide-react";
 import { getUserSafeErrorMessage } from "@/lib/errors";
 
@@ -14,6 +15,7 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string>("");
+  const [consentGiven, setConsentGiven] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -29,12 +31,17 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
         setFile(null);
         return;
       }
+      if (selected.size > 10 * 1024 * 1024) {
+        setError("File size exceeds 10MB limit.");
+        setFile(null);
+        return;
+      }
       setFile(selected);
     }
   };
 
   const handleFileUpload = async () => {
-    if (!file) return;
+    if (!file || !consentGiven) return;
     setIsProcessing(true);
     setError(null);
     try {
@@ -62,8 +69,8 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
   };
 
   const handlePasteSubmit = () => {
-    if (!pasteText.trim()) {
-      setError("Please paste some text before submitting.");
+    if (!pasteText.trim() || !consentGiven) {
+      setError("Please paste some text and confirm privacy consent.");
       return;
     }
     if (pasteText.length > 200000) {
@@ -106,7 +113,13 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
                 />
               </label>
               {error && <p className="text-red-500 text-sm">{error}</p>}
-              <Button onClick={handleFileUpload} disabled={!file || isProcessing} className="w-full">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="consent-upload" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
+                <label htmlFor="consent-upload" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                  I consent to processing this document via Gemini AI and confirm it contains no sensitive PII.
+                </label>
+              </div>
+              <Button onClick={handleFileUpload} disabled={!file || !consentGiven || isProcessing} className="w-full">
                 {isProcessing ? "Processing..." : "Analyze File"}
               </Button>
             </CardContent>
@@ -130,7 +143,13 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
                 }}
               />
               {error && <p className="text-red-500 text-sm">{error}</p>}
-              <Button onClick={handlePasteSubmit} disabled={!pasteText.trim() || isProcessing} className="w-full">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="consent-paste" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
+                <label htmlFor="consent-paste" className="text-sm text-muted-foreground leading-tight cursor-pointer">
+                  I consent to processing this document via Gemini AI and confirm it contains no sensitive PII.
+                </label>
+              </div>
+              <Button onClick={handlePasteSubmit} disabled={!pasteText.trim() || !consentGiven || isProcessing} className="w-full">
                 Analyze Text
               </Button>
             </CardContent>

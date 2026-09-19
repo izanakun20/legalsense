@@ -7,8 +7,13 @@ import { isRateLimited } from '@/lib/rate-limit';
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (isRateLimited(ip)) {
+    if (await isRateLimited(ip)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Payload too large. Maximum size is 10MB.' }, { status: 413 });
     }
 
     const formData = await req.formData();

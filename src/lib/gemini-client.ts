@@ -53,13 +53,20 @@ export async function generateStructuredResponse<T>(
         ? prompt 
         : `${prompt}\n\nYour last response was not valid JSON. Return ONLY the JSON object. Here was your last response: ${lastResponse}`;
 
-      const response = await ai.models.generateContent({
-        model: modelId,
-        contents: callPrompt,
-        config: {
-          temperature: 0.1, // Low temperature for more deterministic JSON
-        }
-      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("AI execution timed out after 30 seconds.")), 30000)
+      );
+
+      const response = await Promise.race([
+        ai.models.generateContent({
+          model: modelId,
+          contents: callPrompt,
+          config: {
+            temperature: 0.1, // Low temperature for more deterministic JSON
+          }
+        }),
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof ai.models.generateContent>>;
       
       const rawText = response.text || "";
       lastResponse = rawText;
