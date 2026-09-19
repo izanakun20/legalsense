@@ -16,6 +16,7 @@ export async function parsePdf(buffer: Buffer): Promise<string> {
     
     return text;
   } catch (error) {
+    console.error("Exact pdf-parse error:", error);
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
   }
 }

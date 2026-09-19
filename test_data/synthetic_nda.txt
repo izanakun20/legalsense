@@ -1,0 +1,28 @@
+MUTUAL NON-DISCLOSURE AGREEMENT — SYNTHETIC TEST DOCUMENT
+For LegalSense testing only.
+
+1. PURPOSE
+The parties may exchange confidential business and technical information for evaluating a hypothetical software partnership.
+
+2. CONFIDENTIAL INFORMATION
+Confidential Information includes non-public product plans, source code, pricing information, customer lists, security documentation, and business strategies disclosed in writing or marked confidential.
+
+3. OBLIGATIONS
+The receiving party shall use Confidential Information only for the stated purpose.
+The receiving party shall restrict access to personnel who need the information for that purpose.
+The receiving party shall use reasonable safeguards to protect Confidential Information.
+
+4. EXCLUSIONS
+Information is not Confidential Information if it was publicly available before disclosure, becomes public without breach of this agreement, or was lawfully known by the receiving party before disclosure.
+
+5. DURATION
+The confidentiality obligations begin on the date of signing and continue for three years after the last disclosure of Confidential Information.
+
+6. RETURN OR DELETION
+Upon written request, the receiving party shall return or delete Confidential Information, except for copies retained automatically by routine backup systems.
+
+7. NO LICENSE
+No intellectual-property license is granted by disclosure of Confidential Information.
+
+8. GENERAL
+This synthetic document is for software testing only. It is not legal advice.

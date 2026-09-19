@@ -42,6 +42,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ text });
   } catch (error) {
+    console.error("Parse File Route Error:", error);
     const safeMsg = getUserSafeErrorMessage(error, "Failed to parse the uploaded file.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });
   }

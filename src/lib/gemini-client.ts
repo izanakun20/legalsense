@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 // Ensure the API key exists or will be provided in environment
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 /**
  * JSON Sanitization:

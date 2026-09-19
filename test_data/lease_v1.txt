@@ -1,0 +1,39 @@
+RESIDENTIAL LEASE AGREEMENT — SYNTHETIC TEST DOCUMENT
+This fictional document is created only for testing LegalSense.
+
+1. PARTIES
+Landlord: Alex Morgan
+Tenant: Jordan Lee
+Property: 14 Cedar Lane, Sample City
+
+2. TERM
+The lease begins on January 1, 2027 and ends on December 31, 2027.
+The tenant must provide written notice at least 30 days before moving out.
+
+3. RENT
+Monthly rent is INR 25,000, payable on or before the 5th day of each month.
+A late fee of INR 500 may be charged if rent is received after the 5th day.
+
+4. SECURITY DEPOSIT
+The tenant shall pay a security deposit of INR 50,000.
+The deposit may be used for unpaid rent or documented property damage.
+The remaining amount should be returned within 30 days after move-out.
+
+5. MAINTENANCE
+The landlord is responsible for structural repairs and major plumbing or electrical defects.
+The tenant is responsible for routine cleaning and damage caused by the tenant's negligence.
+
+6. EARLY TERMINATION
+Either party may request early termination by giving 30 days' written notice.
+If the tenant leaves without the required notice, the landlord may retain an amount equal to one month's rent from the security deposit, subject to the terms of this agreement.
+
+7. RENEWAL
+The lease does not automatically renew.
+Any extension must be agreed in writing by both parties.
+
+8. DISPUTE RESOLUTION
+The parties will first attempt to resolve disputes through direct discussion.
+If the dispute remains unresolved, the parties may seek professional legal assistance.
+
+9. GENERAL
+This synthetic agreement is for software testing only and does not represent legal advice.

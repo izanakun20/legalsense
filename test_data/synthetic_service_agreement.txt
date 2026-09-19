@@ -1,0 +1,17 @@
+SIMPLE SERVICE AGREEMENT — SYNTHETIC TEST DOCUMENT
+For LegalSense testing only.
+
+1. SERVICE
+A fictional designer will create three logo concepts for a fictional customer.
+
+2. PAYMENT
+The customer will pay INR 15,000 in two installments: INR 7,500 at project start and INR 7,500 on final delivery.
+
+3. DELIVERY
+The designer will provide the final selected logo files within 14 days after receiving the second installment.
+
+4. CANCELLATION
+Either party may request cancellation in writing before final delivery.
+
+5. GENERAL
+This synthetic document is for testing LegalSense only and is not legal advice.
