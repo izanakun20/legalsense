@@ -137,8 +137,9 @@ export default function WorkspacePage() {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Sample 1 */}
-                <div 
-                  className={`bg-card rounded-2xl p-6 border transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-md border-border hover:border-secondary`}
+                <button
+                  type="button"
+                  className={`text-left w-full bg-card rounded-2xl p-6 border transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-md border-border hover:border-secondary`}
                   onClick={() => loadSample('lease', 'Standard Residential Lease')}
                 >
                   <div>
@@ -157,11 +158,12 @@ export default function WorkspacePage() {
                     <span>Analyze Sample</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </div>
+                </button>
                 
                 {/* Sample 2 */}
-                <div 
-                  className={`bg-card rounded-2xl p-6 border transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-md border-border hover:border-secondary`}
+                <button
+                  type="button"
+                  className={`text-left w-full bg-card rounded-2xl p-6 border transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-md border-border hover:border-secondary`}
                   onClick={() => loadSample('nda', 'Mutual Non-Disclosure')}
                 >
                   <div>
@@ -180,11 +182,12 @@ export default function WorkspacePage() {
                     <span>Analyze Sample</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </div>
+                </button>
 
                 {/* Sample 3 */}
-                <div 
-                  className={`bg-card rounded-2xl p-6 border transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-md border-border hover:border-secondary`}
+                <button
+                  type="button"
+                  className={`text-left w-full bg-card rounded-2xl p-6 border transition-all cursor-pointer group flex flex-col justify-between shadow-sm hover:shadow-md border-border hover:border-secondary`}
                   onClick={() => loadSample('service', 'Contractor Agreement')}
                 >
                   <div>
@@ -203,7 +206,7 @@ export default function WorkspacePage() {
                     <span>Analyze Sample</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </div>
+                </button>
               </div>
             </div>
           </div>

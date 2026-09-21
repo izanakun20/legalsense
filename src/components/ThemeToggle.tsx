@@ -24,7 +24,7 @@ export function ThemeToggle() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" role="group" aria-label="Theme settings">
       <Button 
         variant={theme === "system" ? "default" : "outline"} 
         size="sm" 

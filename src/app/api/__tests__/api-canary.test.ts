@@ -11,7 +11,7 @@ describe('parse-file route canary', () => {
   it('asserts 405 Method Not Allowed for GET by verifying GET is not exported', async () => {
     // Next.js App Router handles 405 automatically if GET is not exported.
     // We verify it's not exported to ensure the 405 behavior.
-    expect((route as any).GET).toBeUndefined();
+    expect(('GET' in route)).toBe(false);
   });
 
   it('asserts 400 for POST with no file', async () => {
