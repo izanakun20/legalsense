@@ -1,6 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Disclaimer } from "@/lib/product/disclaimer";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -46,7 +47,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <footer role="contentinfo" className="border-t border-border bg-background py-6 md:py-8">
         <div className="container mx-auto px-4 sm:px-8 flex flex-col items-center justify-center gap-4">
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            This is general information, not legal advice. Consult a licensed attorney for your situation.
+            <Disclaimer />
           </p>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
             <Link href="/safety" className="hover:underline underline-offset-4">Safety & Limits</Link>

@@ -9,6 +9,7 @@ import { getUserSafeErrorMessage } from "@/lib/errors";
 import { Info, Search, Download, FileText, ArrowRight } from "lucide-react";
 import { AiOutput } from "./AiOutput";
 import { USE_CASES } from "@/lib/product/use-cases";
+import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
 
 type Clause = {
   category: string;
@@ -135,7 +136,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
   const handleExport = (format: 'pdf' | 'md') => {
     if (!summary || !clauses) return;
     let content = `# Legal Document Analysis Report\n\n`;
-    content += `**Disclaimer:** This is general information, not legal advice. Consult a licensed attorney for your situation.\n\n`;
+    content += `**Disclaimer:** ${DISCLAIMER_TEXT}\n\n`;
     content += `## Summary\n\n${summary}\n\n`;
     content += `## Key Clauses & Risks\n\n`;
     clauses.forEach(c => {
@@ -150,7 +151,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
         content += `- [ ] **Regarding ${c.category}:** ${c.suggestedQuestion}\n`;
       }
     });
-    content += `\n\n**Disclaimer:** This is general information, not legal advice. Consult a licensed attorney for your situation.\n`;
+    content += `\n\n**Disclaimer:** ${DISCLAIMER_TEXT}\n`;
 
     const blob = new Blob([content], { type: format === 'md' ? 'text/markdown' : 'text/plain' });
     const url = URL.createObjectURL(blob);

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UploadCloud, FileText, AlertCircle } from "lucide-react";
 import { getUserSafeErrorMessage } from "@/lib/errors";
+import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
 
 export function DocumentInput({ onParse }: { onParse: (text: string) => void }) {
   const [file, setFile] = useState<File | null>(null);
@@ -179,7 +180,7 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
               className="mt-1 sm:mt-0 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" 
             />
             <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors leading-snug">
-              I acknowledge LegalSense provides AI-assisted analysis, <strong className="font-semibold text-foreground">not formal legal counsel</strong>. Data is never used for training.
+              I acknowledge {DISCLAIMER_TEXT}
             </span>
           </label>
 
