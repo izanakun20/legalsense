@@ -1,4 +1,5 @@
-import { GoogleGenAI } from '@google/genai';
+import 'server-only';
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
 import crypto from 'crypto';
