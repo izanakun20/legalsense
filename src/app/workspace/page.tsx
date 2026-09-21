@@ -48,7 +48,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-80px)] overflow-hidden font-sans bg-[#F4F4F5] dark:bg-background">
+    <div className="flex h-[calc(100vh-80px)] overflow-hidden font-sans bg-background">
       
       {/* Session Library Sidebar */}
       <div className="w-80 flex-shrink-0 bg-card border-r border-border hidden md:flex flex-col h-full shadow-sm relative z-10">

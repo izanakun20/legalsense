@@ -39,7 +39,7 @@ export default function LandingPage() {
         </>
       ),
       riskBadge: (
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#7A4100] bg-[#FFF1D6] px-2.5 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full">
           <span className="material-symbols-outlined text-[13px]">schedule</span>
           <span>Trap Window: 90 Days</span>
         </span>
@@ -123,7 +123,7 @@ export default function LandingPage() {
           </div>
 
           <div className="relative bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-            <div className="border-b border-border px-6 py-3 bg-[#F6F2EB] flex items-center justify-between text-[12px] font-medium text-muted-foreground">
+            <div className="border-b border-border px-6 py-3 bg-muted/50 flex items-center justify-between text-[12px] font-medium text-muted-foreground">
               <div className="flex items-center gap-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-secondary/80"></span>
                 <span className="uppercase tracking-widest text-foreground font-semibold">{folioData[activeClause].docName}</span>
@@ -149,7 +149,7 @@ export default function LandingPage() {
                     14.1. The Tenant covenants to use and occupy the Demised Premises exclusively as a private dwelling for said Tenant, and for no other purpose without prior written authorization.
                   </p>
 
-                  <div className="relative my-4 p-5 md:p-6 rounded-xl bg-[#E6F4F1]/60 shadow-[0_0_28px_-2px_rgba(11,110,102,0.18),inset_0_0_0_1px_rgba(11,110,102,0.22)] transition-all duration-300 border border-secondary/30">
+                  <div className="relative my-4 p-5 md:p-6 rounded-xl bg-secondary/5 shadow-sm shadow-secondary/20 ring-1 ring-inset ring-secondary/20 transition-all duration-300">
                     <div className="absolute -left-1 top-4 bottom-4 w-1 bg-secondary rounded-full"></div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-semibold text-secondary uppercase tracking-[0.14em] flex items-center gap-1.5">
@@ -173,7 +173,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-5 p-6 sm:p-10 lg:p-10 bg-[#FAF7F1] flex flex-col justify-between relative" style={{ backgroundImage: 'radial-gradient(#E8E2D8 0.65px, transparent 0.65px)', backgroundSize: '24px 24px' }}>
+              <div className="lg:col-span-5 p-6 sm:p-10 lg:p-10 bg-muted/30 flex flex-col justify-between relative" style={{ backgroundImage: 'radial-gradient(var(--border) 0.65px, transparent 0.65px)', backgroundSize: '24px 24px' }}>
                 <div>
                   <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
                     <span className="text-[11px] font-semibold tracking-[0.16em] uppercase text-secondary flex items-center gap-1.5">
