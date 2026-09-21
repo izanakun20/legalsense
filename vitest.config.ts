@@ -4,6 +4,10 @@ import path from 'path';
 export default defineConfig({
   test: {
     setupFiles: ['./src/test/setup.ts'],
+    environmentMatchGlobs: [
+      ['**/*.test.tsx', 'jsdom'],
+      ['**/*.test.ts', 'node'],
+    ],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
