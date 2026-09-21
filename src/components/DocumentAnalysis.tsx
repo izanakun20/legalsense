@@ -254,13 +254,13 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
       {/* 4-Col Right Pane: Margin Annotations */}
       <div className="xl:w-1/3 flex flex-col bg-card rounded-[12px] border border-border shadow-sm h-[800px] xl:h-auto overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full w-full">
-          <div className="border-b border-border bg-background/50 overflow-x-auto scrollbar-hide shrink-0">
-            <TabsList className="w-max inline-flex h-14 bg-transparent p-0">
+          <div className="border-b border-border bg-background/50 overflow-x-auto scrollbar-hide shrink-0 w-full relative">
+            <TabsList className="flex h-14 bg-transparent p-0 w-max min-w-full">
               {USE_CASES.map((useCase) => (
                 <TabsTrigger 
                   key={useCase.id} 
                   value={useCase.tabOrRoute}
-                  className="h-14 px-4 sm:px-5 rounded-none border-b-[3px] border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-[12px] font-semibold tracking-wide uppercase whitespace-nowrap text-muted-foreground"
+                  className="h-14 px-4 sm:px-6 rounded-none border-b-[3px] border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-[13px] font-semibold tracking-wide uppercase whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground/80"
                 >
                   {useCase.title}
                 </TabsTrigger>

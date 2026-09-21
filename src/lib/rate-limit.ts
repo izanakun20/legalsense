@@ -8,15 +8,38 @@ const rateLimitMap = new Map<string, number[]>(); // Local fallback for local de
 let redis: Redis | null = null;
 const ratelimiters = new Map<number, Ratelimit>();
 
+export const RATE_LIMITS = {
+  PARSE_FILE: 50,
+  ANALYZE: 10,
+  COMPARE: 10,
+  QA: 20,
+};
+
+let fallbackWarningLogged = false;
+
 try {
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
     redis = new Redis({
       url: process.env.KV_REST_API_URL,
       token: process.env.KV_REST_API_TOKEN,
     });
+  } else if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
   }
 } catch {
-  // Failed to initialize Upstash Redis rate limiter, falling back to in-memory.
+  // Failed to initialize Upstash Redis rate limiter
+}
+
+import { logger } from '@/lib/logger';
+
+export function logFallbackWarningOnce() {
+  if (!redis && !fallbackWarningLogged) {
+    logger.warn('Failed to initialize Upstash Redis rate limiter, falling back to in-memory.', 'RATE_LIMITER');
+    fallbackWarningLogged = true;
+  }
 }
 
 function getRateLimiter(maxRequests: number): Ratelimit | null {
@@ -43,6 +66,7 @@ export async function isRateLimited(identifier: string, maxRequests: number): Pr
   }
 
   // Fallback to in-memory sliding window
+  logFallbackWarningOnce();
   const now = Date.now();
   const windowStart = now - WINDOW_MS;
   

@@ -9,7 +9,7 @@ export default function WorkspaceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const _pathname = usePathname();
 
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col font-sans">
@@ -41,25 +41,27 @@ export default function WorkspaceLayout({
             <nav className="space-y-1">
               <Link 
                 href="/workspace"
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] ${pathname === '/workspace' ? 'bg-background border border-border shadow-sm text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] bg-background border border-border shadow-sm text-primary font-semibold`}
               >
                 <span className="material-symbols-outlined text-[20px]">description</span>
                 Annotated Review
               </Link>
-              <Link 
-                href="/workspace/clauses"
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] ${pathname === '/workspace/clauses' ? 'bg-background border border-border shadow-sm text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+              <button 
+                type="button"
+                className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50 opacity-60 cursor-not-allowed`}
+                title="Coming Soon"
               >
                 <span className="material-symbols-outlined text-[20px]">rule</span>
                 Clause Breakdown
-              </Link>
-              <Link 
-                href="/workspace/matrix"
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] ${pathname === '/workspace/matrix' ? 'bg-background border border-border shadow-sm text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+              </button>
+              <button 
+                type="button"
+                className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50 opacity-60 cursor-not-allowed`}
+                title="Coming Soon"
               >
                 <span className="material-symbols-outlined text-[20px]">shield</span>
                 Risk Matrix
-              </Link>
+              </button>
             </nav>
           </div>
           <div className="px-4">

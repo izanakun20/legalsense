@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { parseFileBuffer } from '@/lib/parsers';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 export const maxDuration = 10;
 
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(`parse-file:${ip}`, 50)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    if (await isRateLimited(`parse-file:${ip}`, RATE_LIMITS.PARSE_FILE)) {
+      return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
 
     const contentLength = req.headers.get('content-length');

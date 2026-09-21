@@ -5,7 +5,7 @@ import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { SUMMARIZE_PROMPT, CLAUSE_DETECTION_PROMPT } from '@/lib/prompts';
 import { chunkText } from '@/lib/chunking';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 const summarySchema = z.object({ summary: z.string() });
 const clausesSchema = z.object({
@@ -27,8 +27,8 @@ export const maxDuration = 10;
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(`analyze:${ip}`, 10)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    if (await isRateLimited(`analyze:${ip}`, RATE_LIMITS.ANALYZE)) {
+      return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
 
     const body = await req.json();

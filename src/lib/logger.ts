@@ -27,3 +27,9 @@ export function sanitizeLogSnippet<T>(obj: T): T {
   
   return sanitized as unknown as T;
 }
+/* eslint-disable no-console */
+export const logger = {
+  warn: (message: string, code: string) => console.warn(`[${code}] ${message}`),
+  error: (message: string, code: string) => console.error(`[${code}] ${message}`),
+  info: (message: string, code: string) => console.info(`[${code}] ${message}`)
+};

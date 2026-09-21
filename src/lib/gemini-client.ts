@@ -1,5 +1,5 @@
 import 'server-only';
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -11,9 +11,14 @@ const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 // Global counter for Gemini API calls
 export let globalGeminiCallCount = 0;
 
-// Simple in-memory LRU cache
-const responseCache = new Map<string, unknown>();
-const MAX_CACHE_SIZE = 100;
+// Simple in-memory LRU cache with TTL
+interface CacheEntry {
+  data: unknown;
+  expiry: number;
+}
+const responseCache = new Map<string, CacheEntry>();
+const MAX_CACHE_SIZE = 20;
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function getCacheKey(prompt: string, modelId: string): string {
   return crypto.createHash('sha256').update(`${modelId}:${prompt}`).digest('hex');
@@ -59,11 +64,16 @@ export async function generateStructuredResponse<T>(
   
   const cacheKey = getCacheKey(prompt, modelId);
   if (responseCache.has(cacheKey)) {
-    // Refresh LRU position
-    const cachedData = responseCache.get(cacheKey);
-    responseCache.delete(cacheKey);
-    responseCache.set(cacheKey, cachedData);
-    return cachedData as T;
+    const entry = responseCache.get(cacheKey)!;
+    if (Date.now() < entry.expiry) {
+      // Refresh LRU position
+      responseCache.delete(cacheKey);
+      responseCache.set(cacheKey, entry);
+      return entry.data as T;
+    } else {
+      // Expired
+      responseCache.delete(cacheKey);
+    }
   }
 
   // Cache miss
@@ -118,7 +128,10 @@ export async function generateStructuredResponse<T>(
         const oldestKey = responseCache.keys().next().value;
         if (oldestKey !== undefined) responseCache.delete(oldestKey);
       }
-      responseCache.set(cacheKey, validData);
+      responseCache.set(cacheKey, {
+        data: validData,
+        expiry: Date.now() + CACHE_TTL_MS
+      });
       
       return validData;
     } catch (error) {

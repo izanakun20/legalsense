@@ -4,7 +4,7 @@ import { generateGuardedResponse } from '@/lib/guard/output-guard';
 import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { COMPARE_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 const requestSchema = z.object({
   doc1Text: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters."),
@@ -25,8 +25,8 @@ export const maxDuration = 10;
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(`compare:${ip}`, 5)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    if (await isRateLimited(`compare:${ip}`, RATE_LIMITS.COMPARE)) {
+      return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
 
     const body = await req.json();

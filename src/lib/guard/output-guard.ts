@@ -96,11 +96,9 @@ export async function generateGuardedResponse<T>(
     if (!phrase) {
       return { data, forbiddenPhraseReplaced: false };
     }
-  } catch (_error) {
-    // If the retry itself fails (e.g. JSON parse error or rate limit), we just fall through 
+  } catch {
+    // If the retry itself fails (e.g. JSON parse error or rate limit), fall through
     // to replacing the phrases in the first attempt's data.
-    // However, if the retry threw, we don't have the retry data. 
-    // We will just proceed with the original data we had.
   }
 
   // If we still have a phrase (either retry failed or retry still contained phrase), replace it.

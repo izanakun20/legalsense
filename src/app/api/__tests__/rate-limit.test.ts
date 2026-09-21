@@ -4,7 +4,8 @@ import * as analyzeRoute from '../analyze/route';
 import * as qaRoute from '../qa/route';
 
 vi.mock('@/lib/rate-limit', () => ({
-  isRateLimited: vi.fn()
+  isRateLimited: vi.fn(),
+  RATE_LIMITS: { ANALYZE: 10, QA: 20, COMPARE: 10, PARSE_FILE: 50 }
 }));
 
 describe('API Rate Limiting', () => {
