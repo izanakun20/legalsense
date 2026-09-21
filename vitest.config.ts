@@ -1,13 +1,15 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import * as path from 'path';
 
 export default defineConfig({
   test: {
     setupFiles: ['./src/test/setup.ts'],
+    // @ts-expect-error Missing property in v5 types
     environmentMatchGlobs: [
       ['**/*.test.tsx', 'jsdom'],
       ['**/*.test.ts', 'node'],
     ],
+
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
