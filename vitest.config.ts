@@ -18,7 +18,7 @@ export default defineConfig({
         '**/*.test.{ts,tsx}',
         '**/*.d.ts'
       ],
-      reporter: ['text-summary', 'json-summary', 'lcov'],
+      reporter: ['text', 'text-summary', 'json-summary', 'lcov'],
       thresholds: {
         statements: 10,
         branches: 12,

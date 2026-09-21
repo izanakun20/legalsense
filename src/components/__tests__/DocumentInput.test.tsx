@@ -27,6 +27,19 @@ test('DocumentInput renders correctly and allows switching tabs', async () => {
   expect(checkbox).toBeInTheDocument();
 });
 
+test('DocumentInput shows error for oversized file', async () => {
+  render(<DocumentInput onParse={vi.fn()} />);
+  const fileInput = screen.getByLabelText(/Select a document to upload/i) as HTMLInputElement;
+  
+  const largeFile = new File(['a'.repeat(5 * 1024 * 1024)], 'large.txt', { type: 'text/plain' });
+  Object.defineProperty(largeFile, 'size', { value: 5 * 1024 * 1024 });
+
+  await userEvent.upload(fileInput, largeFile);
+  
+  const errorMessage = await screen.findByText(/File size exceeds/i);
+  expect(errorMessage).toBeInTheDocument();
+});
+
 test('DocumentInput should have no accessibility violations', async () => {
   const { container } = render(<DocumentInput onParse={vi.fn()} />);
   const results = await axe(container);
