@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: (error as any).errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     const safeMsg = getUserSafeErrorMessage(error, "Failed to answer question.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });
