@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateStructuredResponse } from '@/lib/gemini-client';
+import { generateGuardedResponse } from '@/lib/guard/output-guard';
+import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { QA_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
-import { isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 const requestSchema = z.object({
   documentText: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters."),
@@ -17,29 +17,40 @@ const qaSchema = z.object({
   outOfScope: z.boolean()
 });
 
+export const maxDuration = 10;
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(ip)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    if (await isRateLimited(`qa:${ip}`, RATE_LIMITS.QA)) {
+      return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
 
     const body = await req.json();
     const { documentText, question } = requestSchema.parse(body);
 
-    const result = await generateStructuredResponse(QA_PROMPT(documentText, question), qaSchema);
+    const { data: result, forbiddenPhraseReplaced } = await generateGuardedResponse(QA_PROMPT(documentText, question), qaSchema);
+
+    const guard: GuardMeta = {
+      forbiddenPhraseReplaced,
+      unverifiedQuoteCount: 0
+    };
 
     // Verify citation to prevent hallucinated quotes
-    if (result.quote && !documentText.includes(result.quote)) {
+    if (result.quote && !verifyQuote(result.quote, documentText)) {
       result.quote = null; // drop hallucinated quote
+      result.answer = "I can't find support for this in the document.";
+      guard.unverifiedQuoteCount++;
     }
 
-    console.log(sanitizeLogSnippet({ action: "Q&A answered" }));
-
-    return NextResponse.json(result);
+    if (!guard.forbiddenPhraseReplaced && guard.unverifiedQuoteCount === 0) {
+      return NextResponse.json(result);
+    }
+    
+    return NextResponse.json({ ...result, guard });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: (error as any).errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     const safeMsg = getUserSafeErrorMessage(error, "Failed to answer question.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });

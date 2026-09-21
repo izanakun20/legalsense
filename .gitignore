@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+design/
+stitch_legalsense_document_reader/
+stitch_legalsense_document_reader.zip
+LEGALSENSE_ENGINEERING_PLAN*.md  

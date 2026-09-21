@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateStructuredResponse } from '@/lib/gemini-client';
+import { generateGuardedResponse } from '@/lib/guard/output-guard';
+import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { COMPARE_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
-import { isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 const requestSchema = z.object({
   doc1Text: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters."),
@@ -20,34 +20,51 @@ const compareSchema = z.object({
   }))
 });
 
+export const maxDuration = 10;
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(ip)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    if (await isRateLimited(`compare:${ip}`, RATE_LIMITS.COMPARE)) {
+      return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
 
     const body = await req.json();
     const { doc1Text, doc2Text } = requestSchema.parse(body);
 
-    const result = await generateStructuredResponse(COMPARE_PROMPT(doc1Text, doc2Text), compareSchema);
+    const { data: result, forbiddenPhraseReplaced } = await generateGuardedResponse(COMPARE_PROMPT(doc1Text, doc2Text), compareSchema);
+
+    const guard: GuardMeta = {
+      forbiddenPhraseReplaced,
+      unverifiedQuoteCount: 0,
+      unverifiedItems: []
+    };
 
     // Verify quotes
-    result.changes.forEach(change => {
-      if (change.quoteDoc1 && !doc1Text.includes(change.quoteDoc1)) {
+    result.changes.forEach((change, index) => {
+      let unverified = false;
+      if (change.quoteDoc1 && !verifyQuote(change.quoteDoc1, doc1Text)) {
         change.quoteDoc1 = null;
+        unverified = true;
       }
-      if (change.quoteDoc2 && !doc2Text.includes(change.quoteDoc2)) {
+      if (change.quoteDoc2 && !verifyQuote(change.quoteDoc2, doc2Text)) {
         change.quoteDoc2 = null;
+        unverified = true;
+      }
+      if (unverified) {
+        guard.unverifiedQuoteCount++;
+        guard.unverifiedItems?.push({ type: 'change', index });
       }
     });
 
-    console.log(sanitizeLogSnippet({ action: "Documents compared" }));
+    if (guard.forbiddenPhraseReplaced || guard.unverifiedQuoteCount > 0) {
+      return NextResponse.json({ ...result, guard });
+    }
 
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: (error as any).errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     const safeMsg = getUserSafeErrorMessage(error, "Failed to compare documents.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });

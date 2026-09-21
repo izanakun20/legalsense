@@ -1,19 +1,21 @@
 import { NextResponse } from 'next/server';
 import { parseFileBuffer } from '@/lib/parsers';
+import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
-import { isRateLimited } from '@/lib/rate-limit';
+import { isRateLimited, RATE_LIMITS } from '@/lib/rate-limit';
+
+export const maxDuration = 10;
 
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(ip)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    if (await isRateLimited(`parse-file:${ip}`, RATE_LIMITS.PARSE_FILE)) {
+      return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
 
     const contentLength = req.headers.get('content-length');
-    if (contentLength && parseInt(contentLength, 10) > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Payload too large. Maximum size is 10MB.' }, { status: 413 });
+    if (contentLength && parseInt(contentLength, 10) > MAX_UPLOAD_SIZE) {
+      return NextResponse.json({ error: `Payload too large. Maximum size is ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB.` }, { status: 413 });
     }
 
     const formData = await req.formData();
@@ -37,12 +39,9 @@ export async function POST(req: Request) {
     }
 
     // Do not log document text or filenames
-    const safeLog = sanitizeLogSnippet({ action: "File parsed", size: buffer.length });
-    console.log(safeLog);
 
     return NextResponse.json({ text });
   } catch (error) {
-    console.error("Parse File Route Error:", error);
     const safeMsg = getUserSafeErrorMessage(error, "Failed to parse the uploaded file.");
     const isCorrupt = error instanceof Error && error.message.includes('corrupted or improperly formatted');
     return NextResponse.json({ error: isCorrupt ? error.message : safeMsg }, { status: isCorrupt ? 400 : 500 });

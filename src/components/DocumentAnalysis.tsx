@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DocumentInput } from "./DocumentInput";
 import { getUserSafeErrorMessage } from "@/lib/errors";
-import { AlertTriangle, Info, CheckCircle, Search, Download } from "lucide-react";
+import { Info, Search, Download, FileText, ArrowRight } from "lucide-react";
+import { AiOutput } from "./AiOutput";
+import { USE_CASES } from "@/lib/product/use-cases";
+import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
+
+import { GuardMeta } from "@/lib/guard/quote-verifier";
 
 type Clause = {
   category: string;
@@ -22,6 +26,7 @@ type QAMessage = {
   content: string;
   quote?: string | null;
   outOfScope?: boolean;
+  guard?: GuardMeta;
 };
 
 type CompareChange = {
@@ -34,8 +39,12 @@ type CompareChange = {
 export function DocumentAnalysis({ documentText }: { documentText: string }) {
   const [summary, setSummary] = useState<string | null>(null);
   const [clauses, setClauses] = useState<Clause[] | null>(null);
+  const [analyzeGuard, setAnalyzeGuard] = useState<GuardMeta | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(USE_CASES[0].tabOrRoute);
+  
+  const [hoveredClauseId, setHoveredClauseId] = useState<number | null>(null);
 
   // Q&A state
   const [messages, setMessages] = useState<QAMessage[]>([]);
@@ -45,6 +54,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
   // Compare state
   const [doc2Text, setDoc2Text] = useState<string | null>(null);
   const [changes, setChanges] = useState<CompareChange[] | null>(null);
+  const [compareGuard, setCompareGuard] = useState<GuardMeta | null>(null);
   const [isComparing, setIsComparing] = useState(false);
 
   // Accessibility announcements
@@ -59,11 +69,16 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ documentText })
         });
-        if (!res.ok) throw new Error("Failed to analyze");
         const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to analyze document.");
+        }
+        
         setSummary(data.summary);
         setClauses(data.clauses);
-        setAnnouncement("Analysis complete. Results are available in the Summary and Clauses tabs.");
+        if (data.guard) setAnalyzeGuard(data.guard);
+        setAnnouncement("Analysis complete. Results are available in the tabs.");
       } catch (err) {
         setError(getUserSafeErrorMessage(err, "An error occurred during analysis."));
         setAnnouncement("Analysis failed.");
@@ -88,9 +103,10 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentText, question })
       });
-      if (!res.ok) throw new Error("Failed to get answer");
       const data = await res.json();
-      setMessages([...newMessages, { role: 'assistant', content: data.answer, quote: data.quote, outOfScope: data.outOfScope }]);
+      if (!res.ok) throw new Error(data.error || "Failed to get answer");
+      
+      setMessages([...newMessages, { role: 'assistant', content: data.answer, quote: data.quote, outOfScope: data.outOfScope, guard: data.guard }]);
       setAnnouncement("Answer generated.");
     } catch (err) {
       setMessages([...newMessages, { role: 'assistant', content: getUserSafeErrorMessage(err, "An error occurred. Please try again.") }]);
@@ -110,9 +126,11 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ doc1Text: documentText, doc2Text })
       });
-      if (!res.ok) throw new Error("Failed to compare");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to compare");
+      
       setChanges(data.changes);
+      if (data.guard) setCompareGuard(data.guard);
       setAnnouncement("Comparison complete.");
     } catch (err) {
       setError(getUserSafeErrorMessage(err, "An error occurred during comparison."));
@@ -122,197 +140,416 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = (format: 'pdf' | 'md') => {
     if (!summary || !clauses) return;
-    let md = `# Legal Document Analysis Report\n\n`;
-    md += `**Disclaimer:** This is general information, not legal advice. Consult a licensed attorney for your situation.\n\n`;
-    md += `## Summary\n\n${summary}\n\n`;
-    md += `## Key Clauses & Risks\n\n`;
+    let content = `# Legal Document Analysis Report\n\n`;
+    content += `**Disclaimer:** ${DISCLAIMER_TEXT}\n\n`;
+    content += `## Summary\n\n${summary}\n\n`;
+    content += `## Key Clauses & Risks\n\n`;
     clauses.forEach(c => {
-      md += `### ${c.category}\n`;
-      md += `- **Risk Level:** ${c.attentionLevel}\n`;
-      md += `- **Reason:** ${c.reason}\n`;
-      md += `- **Quote:** "${c.quote}"\n\n`;
+      content += `### ${c.category}\n`;
+      content += `- **Risk Level:** ${c.attentionLevel}\n`;
+      content += `- **Reason:** ${c.reason}\n`;
+      content += `- **Quote:** "${c.quote}"\n\n`;
     });
-    md += `## Attorney-Ready Questions & Next Steps\n\n`;
+    content += `## Attorney-Ready Questions\n\n`;
     clauses.forEach(c => {
       if (c.suggestedQuestion) {
-        md += `- [ ] **Regarding ${c.category}:** ${c.suggestedQuestion}\n`;
+        content += `- [ ] **Regarding ${c.category}:** ${c.suggestedQuestion}\n`;
       }
     });
+    content += `\n\n**Disclaimer:** ${DISCLAIMER_TEXT}\n`;
 
-    const blob = new Blob([md], { type: 'text/markdown' });
+    const blob = new Blob([content], { type: format === 'md' ? 'text/markdown' : 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'document-analysis-report.md';
+    a.download = `document-analysis-report.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setAnnouncement("Report exported successfully.");
+    setAnnouncement(`Report exported successfully as ${format.toUpperCase()}.`);
   };
 
-  const Disclaimer = () => (
-    <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-2 rounded-md text-amber-900 dark:text-amber-200 text-xs font-medium my-2">
-      <strong>Disclaimer:</strong> This is general information, not legal advice. Consult a licensed attorney for your situation.
-    </div>
-  );
+  // Helper to highlight text inline
+  const renderHighlightedText = () => {
+    if (!clauses || clauses.length === 0) return <div className="whitespace-pre-wrap font-serif text-[16px] leading-[28px] text-foreground">{documentText}</div>;
+    
+    let elements = [ { text: documentText, clauseIdx: -1 } ];
+    
+    clauses.forEach((c, idx) => {
+       if (!c.quote || c.quote.length < 5) return;
+       const newElements: {text: string, clauseIdx: number}[] = [];
+       elements.forEach(el => {
+          if (el.clauseIdx !== -1) {
+             newElements.push(el);
+             return;
+          }
+          const parts = el.text.split(c.quote);
+          parts.forEach((part, pIdx) => {
+             newElements.push({ text: part, clauseIdx: -1 });
+             if (pIdx < parts.length - 1) {
+                newElements.push({ text: c.quote, clauseIdx: idx });
+             }
+          });
+       });
+       elements = newElements;
+    });
+
+    return (
+       <div className="whitespace-pre-wrap font-serif text-[16px] leading-[28px] text-foreground selection:bg-primary/20">
+          {elements.map((el, i) => {
+             if (el.clauseIdx === -1) return <span key={i}>{el.text}</span>;
+             const isActive = hoveredClauseId === el.clauseIdx;
+             return (
+                <span 
+                   key={i} 
+                   id={`clause-highlight-${el.clauseIdx}`}
+                   className={`transition-colors cursor-pointer rounded-[2px] border-b-[1.5px] border-dotted border-[#5ED0C3] ${isActive ? 'bg-[#5ED0C3]/30' : 'bg-[#5ED0C3]/[0.18]'}`}
+                   onMouseEnter={() => setHoveredClauseId(el.clauseIdx)}
+                   onMouseLeave={() => setHoveredClauseId(null)}
+                >
+                   {el.text}
+                </span>
+             );
+          })}
+       </div>
+    );
+  };
+
+  const getRiskBadge = (level: string) => {
+    if (level === 'High') return <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wider rounded-[6px] font-bold bg-[#3A1712] border border-[#FFB4A9] text-[#FFB4A9]"><span className="text-[10px]">▲</span> High Risk</span>;
+    if (level === 'Medium') return <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wider rounded-[6px] font-bold bg-[#3A2A0B] border border-[#FFD28A] text-[#FFD28A]"><span className="text-[10px]">◆</span> Medium Risk</span>;
+    return <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wider rounded-[6px] font-bold bg-[#12283F] border border-[#A9CFF5] text-[#A9CFF5]"><span className="text-[10px]">●</span> Low Risk</span>;
+  };
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex justify-end">
-        <Button onClick={handleExport} disabled={!summary || !clauses || isAnalyzing} variant="outline">
-          <Download className="w-4 h-4 mr-2" aria-hidden="true" />
-          Export Report
-        </Button>
+    <div className="w-full flex flex-col xl:flex-row gap-6 min-h-[700px] h-full">
+      {/* 8-Col Left Pane: Document Text */}
+      <div className="xl:w-2/3 flex flex-col bg-card rounded-[12px] border border-border shadow-sm h-full overflow-hidden">
+        <div className="p-4 border-b border-border bg-background/50 flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Source Document</span>
+          <span className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-secondary"></span>
+            Analysis Engine Active
+          </span>
+        </div>
+        <div className="p-6 md:p-8 lg:p-12 overflow-y-auto flex-1">
+          {isAnalyzing ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+              <div className="w-8 h-8 border-4 border-secondary/30 border-t-secondary rounded-full animate-spin mb-4" />
+              <p className="text-[13px] uppercase tracking-wider font-semibold">Analyzing Legal Constructs...</p>
+            </div>
+          ) : error ? (
+            <div className="p-6 rounded-[12px] bg-destructive/10 text-destructive border border-destructive/20 flex gap-3">
+              <p>{error}</p>
+            </div>
+          ) : (
+            renderHighlightedText()
+          )}
+        </div>
       </div>
-      <Tabs defaultValue="summary" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="clauses">Clauses</TabsTrigger>
-          <TabsTrigger value="qa">Q&A</TabsTrigger>
-          <TabsTrigger value="compare">Compare</TabsTrigger>
-        </TabsList>
+      
+      {/* 4-Col Right Pane: Margin Annotations */}
+      <div className="xl:w-1/3 flex flex-col bg-card rounded-[12px] border border-border shadow-sm h-[800px] xl:h-auto overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full w-full">
+          <div className="border-b border-border bg-background/50 overflow-x-auto scrollbar-hide shrink-0 w-full relative">
+            <TabsList className="flex h-14 bg-transparent p-0 w-max min-w-full">
+              {USE_CASES.map((useCase) => (
+                <TabsTrigger 
+                  key={useCase.id} 
+                  value={useCase.tabOrRoute}
+                  className="h-14 px-4 sm:px-6 rounded-none border-b-[3px] border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-[13px] font-semibold tracking-wide uppercase whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground/80"
+                >
+                  {useCase.title}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
-        <TabsContent value="summary">
-          <Card>
-            <CardHeader>
-              <CardTitle>Document Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isAnalyzing ? (
-                <p>Analyzing document...</p>
-              ) : error ? (
-                <p className="text-red-500">{error}</p>
-              ) : (
-                <div className="space-y-4">
-                  <Disclaimer />
-                  <p className="whitespace-pre-wrap">{summary}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="clauses">
-          <Card>
-            <CardHeader>
-              <CardTitle>Key Clauses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Disclaimer />
-              {isAnalyzing ? (
-                <p>Analyzing document...</p>
-              ) : error ? (
-                <p className="text-red-500">{error}</p>
-              ) : (
-                <div className="space-y-4">
-                  {clauses?.map((c, i) => (
-                    <div key={i} className="border p-4 rounded-md space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full font-semibold ${
-                          c.attentionLevel === 'High' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
-                          c.attentionLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300' :
-                          'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-                        }`}>
-                          {c.attentionLevel === 'High' && <AlertTriangle className="w-3 h-3" />}
-                          {c.attentionLevel === 'Medium' && <Info className="w-3 h-3" />}
-                          {c.attentionLevel === 'Low' && <CheckCircle className="w-3 h-3" />}
-                          {c.attentionLevel} Risk
-                        </span>
-                        <span className="font-semibold">{c.category}</span>
-                      </div>
-                      <p className="text-sm"><strong>Reason:</strong> {c.reason}</p>
-                      <p className="text-sm"><strong>Quote:</strong> "{c.quote}"</p>
-                      <p className="text-sm text-blue-600 dark:text-blue-400"><strong>Ask a Lawyer:</strong> {c.suggestedQuestion}</p>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-background/20">
+            {analyzeGuard && (
+              <div className="mb-4 p-3 bg-muted/50 border border-border rounded-[8px] text-[12px] text-muted-foreground flex gap-2">
+                <Info className="w-4 h-4 shrink-0" />
+                <p>Part of this result was replaced or left unverified because it could not be confirmed against the document.</p>
+              </div>
+            )}
+            {/* TAB 1: SIMPLIFY */}
+            <TabsContent value="summary" className="mt-0 outline-none h-full">
+              {isAnalyzing ? null : (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-serif text-foreground">Plain-Language Summary</h3>
+                  <AiOutput>
+                    <div className="prose prose-slate dark:prose-invert max-w-none">
+                      <p className="whitespace-pre-wrap leading-relaxed text-[14px] text-foreground">{summary}</p>
                     </div>
-                  ))}
+                  </AiOutput>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        <TabsContent value="qa">
-          <Card>
-            <CardHeader>
-              <CardTitle>Document Q&A</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 max-h-[400px] overflow-y-auto p-2">
+            {/* TAB 2: COMPARE */}
+            <TabsContent value="compare" className="mt-0 outline-none h-full">
+              <div className="space-y-6">
+                <h3 className="text-xl font-serif text-foreground">Change Detection</h3>
+                {!doc2Text ? (
+                  <div className="space-y-4">
+                    <p className="text-[14px] text-muted-foreground">Upload a second version to detect changes.</p>
+                    <DocumentInput onParse={setDoc2Text} />
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex flex-col gap-3">
+                      <Button onClick={handleCompare} disabled={isComparing} size="lg" className="rounded-[8px] w-full shadow-sm font-semibold text-[13px] uppercase tracking-wider">
+                        {isComparing ? "Comparing..." : "Run Comparison"}
+                      </Button>
+                      <Button variant="outline" onClick={() => { setDoc2Text(null); setChanges(null); setCompareGuard(null); }} className="rounded-[8px] w-full text-[13px] uppercase tracking-wider text-foreground">
+                        Clear Second Document
+                      </Button>
+                    </div>
+                    
+                    {compareGuard && (
+                      <div className="p-3 bg-muted/50 border border-border rounded-[8px] text-[12px] text-muted-foreground flex gap-2">
+                        <Info className="w-4 h-4 shrink-0" />
+                        <p>Part of this result was replaced or left unverified because it could not be confirmed against the document.</p>
+                      </div>
+                    )}
+
+                    {changes && (
+                      <AiOutput className="mt-6 space-y-4">
+                        {changes.length === 0 && <p className="text-muted-foreground p-6 text-center border border-border rounded-[12px]">No material changes detected.</p>}
+                        {changes.map((c, i) => (
+                          <div key={i} className="border border-border p-5 rounded-[12px] space-y-4 bg-card shadow-sm">
+                            <span className={`px-2 py-0.5 text-[11px] uppercase tracking-wider rounded-[6px] font-bold ${
+                              c.type === 'Added' ? 'bg-[#1E2A40] text-[#9DBDF0] border border-[#26354E]' :
+                              c.type === 'Removed' ? 'bg-[#3A1712] text-[#FFB4A9] border border-[#FFB4A9]' :
+                              'bg-[#3A2A0B] text-[#FFD28A] border border-[#FFD28A]'
+                            }`}>
+                              {c.type}
+                            </span>
+                            <p className="text-[14px] text-foreground leading-relaxed">{c.description}</p>
+                          </div>
+                        ))}
+                      </AiOutput>
+                    )}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* TAB 3: HIGHLIGHT (CLAUSES) */}
+            <TabsContent value="highlight" className="mt-0 outline-none h-full">
+              {isAnalyzing ? null : (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-serif text-foreground mb-2">Clause Annotations</h3>
+                  <AiOutput>
+                    <div className="space-y-5 relative">
+                      {/* Hairline structural line linking annotations in theory */}
+                      <div className="absolute left-4 top-0 bottom-0 w-[1px] bg-[#26354E] -z-10 hidden sm:block" />
+                      
+                      {clauses?.map((c, i) => (
+                        <div 
+                          key={i} 
+                          className={`bg-card border p-5 rounded-[12px] shadow-sm space-y-4 transition-all duration-200 cursor-pointer ${
+                            hoveredClauseId === i ? 'border-primary ring-1 ring-primary/50 -translate-y-0.5' : 'border-[#26354E] hover:border-[#7C8798]'
+                          }`}
+                          onMouseEnter={() => setHoveredClauseId(i)}
+                          onMouseLeave={() => setHoveredClauseId(null)}
+                          onClick={() => {
+                            const el = document.getElementById(`clause-highlight-${i}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                        >
+                          <div className="flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                              {getRiskBadge(c.attentionLevel)}
+                            </div>
+                            <span className="font-serif text-[18px] text-foreground">{c.category}</span>
+                          </div>
+                          
+                          <div>
+                            <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                              Margin Intelligence
+                            </span>
+                            <p className="text-[14px] text-muted-foreground leading-relaxed font-sans">{c.reason}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AiOutput>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* TAB 4: ASK */}
+            <TabsContent value="ask" className="mt-0 outline-none h-full flex flex-col">
+              <h3 className="text-xl font-serif text-foreground mb-4 shrink-0">Citation-Grounded Q&A</h3>
+              <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-background/50 border border-border rounded-[12px] mb-4 custom-scrollbar">
+                {messages.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                    <Search className="w-8 h-8 mb-4 opacity-30" />
+                    <p className="text-[13px] text-center px-4">Ask a question about the document text.</p>
+                  </div>
+                )}
                 {messages.map((m, i) => (
-                  <div key={i} className={`p-3 rounded-md ${m.role === 'user' ? 'bg-muted ml-8' : 'bg-blue-50 dark:bg-blue-900/20 mr-8'}`}>
-                    <p className="text-sm font-semibold mb-1">{m.role === 'user' ? 'You' : 'Assistant'}</p>
-                    {m.role === 'assistant' && <Disclaimer />}
-                    <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-                    {m.quote && (
-                      <p className="text-xs text-muted-foreground mt-2 border-l-2 pl-2">"{m.quote}"</p>
+                  <div key={i} className={`p-4 rounded-[12px] shadow-sm border ${m.role === 'user' ? 'bg-primary text-primary-foreground ml-6 border-transparent' : 'bg-card mr-6 border-border'}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${m.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                      {m.role === 'user' ? 'You' : 'Analysis Engine'}
+                    </p>
+                    {m.role === 'assistant' ? (
+                      <AiOutput>
+                        <div className="space-y-3">
+                          <p className="text-[14px] leading-relaxed whitespace-pre-wrap text-foreground">{m.content}</p>
+                          {m.quote && (
+                            <div className="p-3 bg-background/80 rounded-[8px] border border-border/50">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Source Text</span>
+                              <p className="font-serif italic text-[13px] text-muted-foreground leading-relaxed">&quot;{m.quote}&quot;</p>
+                            </div>
+                          )}
+                          {m.guard && (
+                            <div className="p-3 bg-muted/50 border border-border rounded-[8px] text-[12px] text-muted-foreground flex gap-2 mt-2">
+                              <Info className="w-4 h-4 shrink-0" />
+                              <p>Part of this result was replaced or left unverified because it could not be confirmed against the document.</p>
+                            </div>
+                          )}
+                        </div>
+                      </AiOutput>
+                    ) : (
+                      <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{m.content}</p>
                     )}
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2 mt-4">
+              
+              <div className="relative shrink-0">
                 <Input 
                   value={question} 
                   onChange={e => setQuestion(e.target.value)}
-                  placeholder="Ask a question about the document..."
-                  onKeyDown={e => e.key === 'Enter' && handleAsk()}
+                  placeholder="Ask a question..."
+                  className="pr-20 h-12 rounded-[8px] border-border bg-background focus-visible:ring-primary shadow-sm text-[14px] px-4"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAsk();
+                    }
+                  }}
                 />
-                <Button onClick={handleAsk} disabled={isAsking || !question.trim()} aria-label="Send question">
-                  <Search className="w-4 h-4 mr-2" aria-hidden="true" />
+                <Button 
+                  onClick={handleAsk} 
+                  disabled={isAsking || !question.trim()} 
+                  size="sm"
+                  className="absolute right-1.5 top-1.5 bottom-1.5 rounded-[6px] px-4 font-semibold text-[12px] uppercase tracking-wider"
+                >
                   Ask
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        <TabsContent value="compare">
-          <Card>
-            <CardHeader>
-              <CardTitle>Compare Document</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!doc2Text ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">Upload or paste a second document to compare against the current one.</p>
-                  <DocumentInput onParse={setDoc2Text} />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Disclaimer />
-                  <Button onClick={handleCompare} disabled={isComparing}>
-                    {isComparing ? "Comparing..." : "Run Comparison"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setDoc2Text(null)} className="ml-2">Clear Document 2</Button>
-                  
-                  {changes && (
-                    <div className="space-y-4 mt-4">
-                      {changes.map((c, i) => (
-                        <div key={i} className="border p-4 rounded-md space-y-2">
-                          <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
-                            c.type === 'Added' ? 'bg-green-100 text-green-800' :
-                            c.type === 'Removed' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {c.type}
-                          </span>
-                          <p className="text-sm">{c.description}</p>
-                          {c.quoteDoc1 && <p className="text-xs text-muted-foreground"><strong>Doc 1:</strong> "{c.quoteDoc1}"</p>}
-                          {c.quoteDoc2 && <p className="text-xs text-muted-foreground"><strong>Doc 2:</strong> "{c.quoteDoc2}"</p>}
+            {/* TAB 5: OPTIONS AND NEXT STEPS */}
+            <TabsContent value="options" className="mt-0 outline-none h-full">
+              {isAnalyzing ? null : (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-serif text-foreground">Options and Next Steps</h3>
+                  <p className="text-muted-foreground text-[14px] mb-6">
+                    Negotiation points based on the extracted clauses.
+                  </p>
+                  <AiOutput>
+                    <div className="space-y-4">
+                      {clauses?.map((c, i) => (
+                        <div key={i} className="flex items-start gap-3 p-4 rounded-[12px] border border-[#26354E] bg-card">
+                          <ArrowRight className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-foreground text-[14px] mb-1">Regarding {c.category}</h4>
+                            <p className="text-[13.5px] text-muted-foreground leading-relaxed">
+                              Consider discussing the risk associated with this term. {c.reason}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  )}
+                  </AiOutput>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+
+            {/* TAB 6: ACTIONABLE OUTPUTS */}
+            <TabsContent value="actionable" className="mt-0 outline-none h-full">
+              <div className="space-y-8 flex flex-col items-center text-center py-10">
+                <div className="w-14 h-14 bg-secondary/10 text-secondary rounded-[12px] flex items-center justify-center mb-2 border border-secondary/20">
+                  <Download className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-serif text-foreground">Export Checklist</h3>
+                <p className="text-muted-foreground text-[14px] max-w-sm leading-relaxed">
+                  Download a complete breakdown of all identified clauses and attorney-ready questions.
+                </p>
+                
+                <div className="flex flex-col gap-3 mt-4 w-full">
+                  <Button 
+                    onClick={() => handleExport('pdf')} 
+                    disabled={!summary || !clauses || isAnalyzing}
+                    size="lg"
+                    className="rounded-[8px] shadow-sm gap-2 w-full font-semibold text-[13px] uppercase tracking-wider"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Export as PDF
+                  </Button>
+                  <Button 
+                    onClick={() => handleExport('md')} 
+                    disabled={!summary || !clauses || isAnalyzing}
+                    variant="outline"
+                    size="lg"
+                    className="rounded-[8px] shadow-sm gap-2 w-full text-foreground font-semibold text-[13px] uppercase tracking-wider"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Export as Markdown
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* TAB 7: ATTORNEY PREP */}
+            <TabsContent value="attorney" className="mt-0 outline-none h-full">
+              {isAnalyzing ? null : (
+                <div className="space-y-6">
+                  <div className="border-b border-border pb-4">
+                    <h3 className="text-xl font-serif text-foreground mb-2">Attorney Prep</h3>
+                    <p className="text-muted-foreground text-[14px]">
+                      Specific questions to bring to your legal counsel.
+                    </p>
+                  </div>
+                  
+                  <AiOutput>
+                    <div className="space-y-5">
+                      {clauses?.filter(c => c.suggestedQuestion).map((c, i) => (
+                        <div key={i} className="p-5 rounded-[12px] border border-[#26354E] bg-card shadow-sm relative overflow-hidden group">
+                          <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#5ED0C3]/80 group-hover:bg-[#5ED0C3] transition-colors" />
+                          <h4 className="font-semibold text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                            Topic: {c.category}
+                          </h4>
+                          <p className="font-serif text-[15px] text-foreground leading-relaxed italic mb-4">
+                            &quot;{c.suggestedQuestion}&quot;
+                          </p>
+                          <div className="p-3 bg-background/50 rounded-[8px] border border-border text-[12.5px] text-muted-foreground flex gap-2">
+                            <Info className="w-4 h-4 shrink-0 mt-0.5 text-secondary" />
+                            <p>
+                              <span className="font-semibold text-foreground">Why ask this:</span> {c.reason}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AiOutput>
+                </div>
+              )}
+            </TabsContent>
+
+          </div>
+        </Tabs>
+      </div>
       
-      <div aria-live="polite" className="sr-only" role="status">
+      <div aria-live="polite" className="sr-only" role="status" id="doc-analysis-announcer">
         {announcement}
       </div>
     </div>

@@ -1,10 +1,28 @@
-import { GoogleGenAI } from '@google/genai';
+import 'server-only';
+import { GoogleGenAI } from "@google/genai";
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 // Ensure the API key exists or will be provided in environment
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+
+// Global counter for Gemini API calls
+export let globalGeminiCallCount = 0;
+
+// Simple in-memory LRU cache with TTL
+interface CacheEntry {
+  data: unknown;
+  expiry: number;
+}
+const responseCache = new Map<string, CacheEntry>();
+const MAX_CACHE_SIZE = 20;
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function getCacheKey(prompt: string, modelId: string): string {
+  return crypto.createHash('sha256').update(`${modelId}:${prompt}`).digest('hex');
+}
 
 /**
  * JSON Sanitization:
@@ -44,6 +62,25 @@ export async function generateStructuredResponse<T>(
     throw new Error("GEMINI_API_KEY is not configured.");
   }
   
+  const cacheKey = getCacheKey(prompt, modelId);
+  if (responseCache.has(cacheKey)) {
+    const entry = responseCache.get(cacheKey)!;
+    if (Date.now() < entry.expiry) {
+      // Refresh LRU position
+      responseCache.delete(cacheKey);
+      responseCache.set(cacheKey, entry);
+      return entry.data as T;
+    } else {
+      // Expired
+      responseCache.delete(cacheKey);
+    }
+  }
+
+  // Cache miss
+  globalGeminiCallCount++;
+  // eslint-disable-next-line no-console
+  console.log(`[Gemini API] Cache miss. Total calls made: ${globalGeminiCallCount}`);
+
   let attempt = 0;
   let lastResponse = "";
 
@@ -76,14 +113,27 @@ export async function generateStructuredResponse<T>(
       let parsedObject;
       try {
         parsedObject = JSON.parse(sanitized);
-      } catch (parseError) {
+      } catch {
         // Fallback to jsonrepair
         const repaired = jsonrepair(sanitized);
         parsedObject = JSON.parse(repaired);
       }
       
       // Validate against the Zod schema
-      return schema.parse(parsedObject);
+      const validData = schema.parse(parsedObject);
+      
+      // Update cache
+      if (responseCache.size >= MAX_CACHE_SIZE) {
+        // Remove oldest (first item)
+        const oldestKey = responseCache.keys().next().value;
+        if (oldestKey !== undefined) responseCache.delete(oldestKey);
+      }
+      responseCache.set(cacheKey, {
+        data: validData,
+        expiry: Date.now() + CACHE_TTL_MS
+      });
+      
+      return validData;
     } catch (error) {
       attempt++;
       if (attempt >= 2) {

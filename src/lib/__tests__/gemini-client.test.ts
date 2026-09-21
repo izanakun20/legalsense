@@ -47,7 +47,7 @@ describe('gemini-client', () => {
       text: '```json\n{"result": "success"}\n```'
     });
 
-    const data = await generateStructuredResponse("test prompt", schema);
+    const data = await generateStructuredResponse("test prompt fences", schema);
     expect(data.result).toBe("success");
   });
 
@@ -62,11 +62,9 @@ describe('gemini-client', () => {
     });
     
     // Second call returns valid JSON
-    mockGenerateContent.mockResolvedValueOnce({
-      text: '{"result": "success on retry"}'
-    });
+    mockGenerateContent.mockResolvedValueOnce({ text: '{ "result": "success on retry" }' });
 
-    const data = await generateStructuredResponse("test prompt", schema);
+    const data = await generateStructuredResponse("test prompt retry", schema);
     expect(data.result).toBe("success on retry");
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     
@@ -80,11 +78,9 @@ describe('gemini-client', () => {
     const instance = new GoogleGenAI();
     const mockGenerateContent = instance.models.generateContent as unknown as import('vitest').Mock;
     
-    mockGenerateContent.mockResolvedValue({
-      text: 'Garbage'
-    });
+    mockGenerateContent.mockResolvedValueOnce({ text: 'invalid json 2' });
 
-    await expect(generateStructuredResponse("test prompt", schema)).rejects.toThrow(/Failed to generate valid structured output after 2 attempts/);
+    await expect(generateStructuredResponse("test prompt fail", schema)).rejects.toThrow('Failed to generate valid structured output after 2 attempts.');
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, FileText, AlertCircle } from "lucide-react";
 import { getUserSafeErrorMessage } from "@/lib/errors";
+import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
+import { MAX_UPLOAD_SIZE } from "@/lib/constants";
 
 export function DocumentInput({ onParse }: { onParse: (text: string) => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [pasteText, setPasteText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [announcement, setAnnouncement] = useState<string>("");
   const [consentGiven, setConsentGiven] = useState(false);
+  const [activeTab, setActiveTab] = useState<'upload' | 'paste'>('upload');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -31,8 +31,8 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
         setFile(null);
         return;
       }
-      if (selected.size > 10 * 1024 * 1024) {
-        setError("File size exceeds 10MB limit.");
+      if (selected.size > MAX_UPLOAD_SIZE) {
+        setError(`File size exceeds ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB limit.`);
         setFile(null);
         return;
       }
@@ -53,16 +53,19 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
         body: formData,
       });
       
+      const data = await res.json();
+      
       if (!res.ok) {
-        throw new Error("Failed to parse file.");
+        throw new Error(data.error || "Failed to parse file.");
       }
       
-      const data = await res.json();
-      setAnnouncement("File uploaded and processed successfully.");
+      if (!data.text || data.text.trim().length === 0) {
+        throw new Error("The document contains no extractable text. Scanned PDFs are not supported.");
+      }
+      
       onParse(data.text);
     } catch (err) {
       setError(getUserSafeErrorMessage(err, "An unexpected error occurred while parsing the file."));
-      setAnnouncement("Failed to upload file.");
     } finally {
       setIsProcessing(false);
     }
@@ -78,89 +81,119 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
       return;
     }
     setError(null);
-    setAnnouncement("Text analyzed successfully.");
-    // Paste text does not go through file extension validation
     onParse(pasteText);
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload" role="tab">Upload File</TabsTrigger>
-          <TabsTrigger value="paste" role="tab">Paste Text</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="upload" role="tabpanel">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Document</CardTitle>
-              <CardDescription>Upload a PDF, DOCX, or TXT file for analysis.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <label 
-                className="border-2 border-dashed rounded-lg p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
-              >
-                <UploadCloud className="w-10 h-10 mb-4 text-muted-foreground" aria-hidden="true" />
-                <p className="text-sm text-muted-foreground">
-                  {file ? file.name : "Click to select a file"}
-                </p>
+    <div className="w-full max-w-3xl mx-auto bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col font-sans">
+      <div className="flex items-center gap-6 px-6 sm:px-8 border-b border-border bg-background pt-6">
+        <button 
+          onClick={() => setActiveTab('upload')}
+          className={`pb-4 relative font-medium transition-colors text-[14px] uppercase tracking-wide ${activeTab === 'upload' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <span className="flex items-center gap-2">
+            <UploadCloud className="w-4 h-4" />
+            Upload file
+          </span>
+          {activeTab === 'upload' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+          )}
+        </button>
+        <button 
+          onClick={() => setActiveTab('paste')}
+          className={`pb-4 relative font-medium transition-colors text-[14px] uppercase tracking-wide ${activeTab === 'paste' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <span className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Paste text
+          </span>
+          {activeTab === 'paste' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+          )}
+        </button>
+      </div>
+
+      <div className="p-6 sm:p-8 flex flex-col gap-8">
+        <div className="min-h-[400px]">
+          {activeTab === 'upload' ? (
+            <div
+              key="upload"
+              className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              <label className="relative rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors bg-background p-12 text-center flex flex-col items-center justify-center cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
                 <input 
                   type="file" 
                   className="sr-only" 
-                  accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                  accept=".pdf,.docx,.txt"
                   onChange={handleFileChange}
                 />
+                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
+                  <UploadCloud className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-serif text-foreground mb-2">
+                  {file ? file.name : "Select a document to upload"}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                  Supports PDF, DOCX, and TXT files up to {MAX_UPLOAD_SIZE / (1024 * 1024)}MB.
+                </p>
+                <div className="h-10 px-6 inline-flex items-center justify-center rounded-full bg-secondary text-secondary-foreground text-sm font-medium transition-colors hover:bg-secondary/90 shadow-sm">
+                  Browse files
+                </div>
               </label>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <div className="flex items-center space-x-2">
-                <Checkbox id="consent-upload" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
-                <label htmlFor="consent-upload" className="text-sm text-muted-foreground leading-tight cursor-pointer">
-                  I consent to processing this document via Gemini AI and confirm it contains no sensitive PII.
-                </label>
-              </div>
-              <Button onClick={handleFileUpload} disabled={!file || !consentGiven || isProcessing} className="w-full">
-                {isProcessing ? "Processing..." : "Analyze File"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="paste" role="tabpanel">
-          <Card>
-            <CardHeader>
-              <CardTitle>Paste Text</CardTitle>
-              <CardDescription>Paste document text directly below.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              {error && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p>{error}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              key="paste"
+              className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
               <Textarea 
                 placeholder="Paste your legal document text here..."
-                className="min-h-[200px]"
+                className="min-h-[300px] font-mono text-sm leading-relaxed p-6 bg-background rounded-xl focus-visible:ring-primary border-border resize-none"
                 value={pasteText}
                 onChange={(e) => {
                   setPasteText(e.target.value);
                   setError(null);
                 }}
               />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <div className="flex items-center space-x-2">
-                <Checkbox id="consent-paste" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked as boolean)} />
-                <label htmlFor="consent-paste" className="text-sm text-muted-foreground leading-tight cursor-pointer">
-                  I consent to processing this document via Gemini AI and confirm it contains no sensitive PII.
-                </label>
-              </div>
-              <Button onClick={handlePasteSubmit} disabled={!pasteText.trim() || !consentGiven || isProcessing} className="w-full">
-                Analyze Text
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-      
-      {/* Aria-live region for screen readers as requested */}
-      <div aria-live="polite" className="sr-only" role="status">
-        {isProcessing ? "Processing document, please wait." : announcement}
-        {error ? `Error: ${error}` : ""}
+              {error && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p>{error}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="pt-6 border-t border-border flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
+          <label htmlFor="consent-checkbox" className="flex items-start sm:items-center gap-3 cursor-pointer group max-w-md">
+            <Checkbox 
+              id="consent-checkbox"
+              checked={consentGiven} 
+              onCheckedChange={(checked) => setConsentGiven(checked as boolean)}
+              className="mt-1 sm:mt-0 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" 
+            />
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors leading-snug">
+              I acknowledge {DISCLAIMER_TEXT}
+            </span>
+          </label>
+
+          <Button 
+            onClick={activeTab === 'upload' ? handleFileUpload : handlePasteSubmit} 
+            disabled={(activeTab === 'upload' ? !file : !pasteText.trim()) || !consentGiven || isProcessing} 
+            size="lg"
+            className="w-full sm:w-auto rounded-full font-semibold shadow-sm shrink-0"
+          >
+            {isProcessing ? "Processing Document..." : "Analyze Document"}
+          </Button>
+        </div>
       </div>
     </div>
   );
