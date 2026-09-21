@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { MotionConfig } from "framer-motion";
 
 export function ThemeProvider({
   children,
@@ -10,9 +9,7 @@ export function ThemeProvider({
 }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
     <NextThemesProvider {...props}>
-      <MotionConfig reducedMotion="user">
-        {children}
-      </MotionConfig>
+      {children}
     </NextThemesProvider>
   );
 }

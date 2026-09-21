@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UploadCloud, FileText, AlertCircle } from "lucide-react";
 import { getUserSafeErrorMessage } from "@/lib/errors";
-import { motion, AnimatePresence } from "framer-motion";
 
 export function DocumentInput({ onParse }: { onParse: (text: string) => void }) {
   const [file, setFile] = useState<File | null>(null);
@@ -95,7 +94,7 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
             Upload file
           </span>
           {activeTab === 'upload' && (
-            <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
           )}
         </button>
         <button 
@@ -107,21 +106,17 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
             Paste text
           </span>
           {activeTab === 'paste' && (
-            <motion.div layoutId="tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
           )}
         </button>
       </div>
 
       <div className="p-6 sm:p-8 flex flex-col gap-8">
-        <AnimatePresence mode="wait">
+        <div className="min-h-[400px]">
           {activeTab === 'upload' ? (
-            <motion.div
+            <div
               key="upload"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
             >
               <label className="relative rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors bg-background p-12 text-center flex flex-col items-center justify-center cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
                 <input 
@@ -150,15 +145,11 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
                   <p>{error}</p>
                 </div>
               )}
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
+            <div
               key="paste"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300"
             >
               <Textarea 
                 placeholder="Paste your legal document text here..."
@@ -175,9 +166,9 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
                   <p>{error}</p>
                 </div>
               )}
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
 
         <div className="pt-6 border-t border-border flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
           <label htmlFor="consent-checkbox" className="flex items-start sm:items-center gap-3 cursor-pointer group max-w-md">
