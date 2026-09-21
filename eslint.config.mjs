@@ -10,7 +10,7 @@ const eslintConfig = defineConfig([
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
       "max-lines": ["warn", 600],
-      "no-console": "warn",
+      "no-console": "error",
       "@typescript-eslint/no-require-imports": "warn",
       "react/no-unescaped-entities": "warn",
       "@typescript-eslint/no-unused-vars": "warn"
