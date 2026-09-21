@@ -25,7 +25,7 @@ const requestSchema = z.object({
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(ip)) {
+    if (await isRateLimited(`analyze:${ip}`, 10)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 

@@ -20,7 +20,7 @@ const qaSchema = z.object({
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
-    if (await isRateLimited(ip)) {
+    if (await isRateLimited(`qa:${ip}`, 100)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
