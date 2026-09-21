@@ -211,7 +211,7 @@ export default function LandingPage() {
                 <div className="pt-8 border-t border-border mt-8 flex items-center justify-between text-[11px] text-muted-foreground/80">
                   <span className="flex items-center gap-1">
                     <span className="material-symbols-outlined text-[14px]">lock</span>
-                    100% Client-side isolated
+                    Server-side processing
                   </span>
                   <span>Never stored or trained</span>
                 </div>
