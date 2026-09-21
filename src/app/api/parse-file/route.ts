@@ -4,6 +4,8 @@ import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import { getUserSafeErrorMessage } from '@/lib/errors';
 import { isRateLimited } from '@/lib/rate-limit';
 
+export const maxDuration = 10;
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';

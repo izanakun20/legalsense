@@ -22,6 +22,8 @@ const requestSchema = z.object({
   documentText: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters.")
 });
 
+export const maxDuration = 10;
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';

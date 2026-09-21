@@ -20,6 +20,8 @@ const compareSchema = z.object({
   }))
 });
 
+export const maxDuration = 10;
+
 export async function POST(req: Request) {
   try {
     const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
