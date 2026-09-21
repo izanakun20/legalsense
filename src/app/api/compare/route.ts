@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateStructuredResponse } from '@/lib/gemini-client';
+import { generateGuardedResponse } from '@/lib/guard/output-guard';
+import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { COMPARE_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
 import { isRateLimited } from '@/lib/rate-limit';
@@ -29,17 +30,34 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { doc1Text, doc2Text } = requestSchema.parse(body);
 
-    const result = await generateStructuredResponse(COMPARE_PROMPT(doc1Text, doc2Text), compareSchema);
+    const { data: result, forbiddenPhraseReplaced } = await generateGuardedResponse(COMPARE_PROMPT(doc1Text, doc2Text), compareSchema);
+
+    const guard: GuardMeta = {
+      forbiddenPhraseReplaced,
+      unverifiedQuoteCount: 0,
+      unverifiedItems: []
+    };
 
     // Verify quotes
-    result.changes.forEach(change => {
-      if (change.quoteDoc1 && !doc1Text.includes(change.quoteDoc1)) {
+    result.changes.forEach((change, index) => {
+      let unverified = false;
+      if (change.quoteDoc1 && !verifyQuote(change.quoteDoc1, doc1Text)) {
         change.quoteDoc1 = null;
+        unverified = true;
       }
-      if (change.quoteDoc2 && !doc2Text.includes(change.quoteDoc2)) {
+      if (change.quoteDoc2 && !verifyQuote(change.quoteDoc2, doc2Text)) {
         change.quoteDoc2 = null;
+        unverified = true;
+      }
+      if (unverified) {
+        guard.unverifiedQuoteCount++;
+        guard.unverifiedItems?.push({ type: 'change', index });
       }
     });
+
+    if (guard.forbiddenPhraseReplaced || guard.unverifiedQuoteCount > 0) {
+      return NextResponse.json({ ...result, guard });
+    }
 
     return NextResponse.json(result);
   } catch (error) {

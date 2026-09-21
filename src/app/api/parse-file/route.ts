@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseFileBuffer } from '@/lib/parsers';
+import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import { getUserSafeErrorMessage } from '@/lib/errors';
 import { isRateLimited } from '@/lib/rate-limit';
 
@@ -11,8 +12,8 @@ export async function POST(req: Request) {
     }
 
     const contentLength = req.headers.get('content-length');
-    if (contentLength && parseInt(contentLength, 10) > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Payload too large. Maximum size is 10MB.' }, { status: 413 });
+    if (contentLength && parseInt(contentLength, 10) > MAX_UPLOAD_SIZE) {
+      return NextResponse.json({ error: `Payload too large. Maximum size is ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB.` }, { status: 413 });
     }
 
     const formData = await req.formData();

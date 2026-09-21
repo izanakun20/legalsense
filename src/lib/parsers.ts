@@ -1,18 +1,28 @@
 import * as mammoth from 'mammoth';
 import pdfParse from 'pdf-parse';
+import { MAX_UPLOAD_SIZE, MAX_PDF_PAGES } from './constants';
 
 /**
  * Parses a PDF file buffer and extracts text.
  */
 export async function parsePdf(buffer: Buffer): Promise<string> {
+  let data;
   try {
-    const data = await pdfParse(buffer);
-    const text = data.text.trim();
-    
-    return text;
+    data = await pdfParse(buffer);
   } catch {
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
   }
+
+  if (data.numpages > MAX_PDF_PAGES) {
+    throw new Error(`PDF exceeds the maximum allowed page count of ${MAX_PDF_PAGES} pages.`);
+  }
+
+  const text = data.text.trim();
+  if (!text) {
+    throw new Error("This appears to be a scanned PDF with no text layer. Please upload a text-searchable document.");
+  }
+  
+  return text;
 }
 
 /**
@@ -51,6 +61,10 @@ function validateMagicBytes(buffer: Buffer, expectedType: 'pdf' | 'docx'): boole
  * Main parser entrypoint for file buffers based on mimetype or extension.
  */
 export async function parseFileBuffer(buffer: Buffer, filename: string, mimeType: string): Promise<string> {
+  if (buffer.length > MAX_UPLOAD_SIZE) {
+    throw new Error(`File is too large. Maximum size is ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB.`);
+  }
+
   if (filename.endsWith('.pdf') || mimeType === 'application/pdf') {
     if (!validateMagicBytes(buffer, 'pdf')) throw new Error('Invalid PDF format signature.');
     return parsePdf(buffer);

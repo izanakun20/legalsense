@@ -11,6 +11,8 @@ import { AiOutput } from "./AiOutput";
 import { USE_CASES } from "@/lib/product/use-cases";
 import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
 
+import { GuardMeta } from "@/lib/guard/quote-verifier";
+
 type Clause = {
   category: string;
   attentionLevel: 'High' | 'Medium' | 'Low';
@@ -24,6 +26,7 @@ type QAMessage = {
   content: string;
   quote?: string | null;
   outOfScope?: boolean;
+  guard?: GuardMeta;
 };
 
 type CompareChange = {
@@ -36,6 +39,7 @@ type CompareChange = {
 export function DocumentAnalysis({ documentText }: { documentText: string }) {
   const [summary, setSummary] = useState<string | null>(null);
   const [clauses, setClauses] = useState<Clause[] | null>(null);
+  const [analyzeGuard, setAnalyzeGuard] = useState<GuardMeta | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(USE_CASES[0].tabOrRoute);
@@ -50,6 +54,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
   // Compare state
   const [doc2Text, setDoc2Text] = useState<string | null>(null);
   const [changes, setChanges] = useState<CompareChange[] | null>(null);
+  const [compareGuard, setCompareGuard] = useState<GuardMeta | null>(null);
   const [isComparing, setIsComparing] = useState(false);
 
   // Accessibility announcements
@@ -72,6 +77,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
         
         setSummary(data.summary);
         setClauses(data.clauses);
+        if (data.guard) setAnalyzeGuard(data.guard);
         setAnnouncement("Analysis complete. Results are available in the tabs.");
       } catch (err) {
         setError(getUserSafeErrorMessage(err, "An error occurred during analysis."));
@@ -100,7 +106,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to get answer");
       
-      setMessages([...newMessages, { role: 'assistant', content: data.answer, quote: data.quote, outOfScope: data.outOfScope }]);
+      setMessages([...newMessages, { role: 'assistant', content: data.answer, quote: data.quote, outOfScope: data.outOfScope, guard: data.guard }]);
       setAnnouncement("Answer generated.");
     } catch (err) {
       setMessages([...newMessages, { role: 'assistant', content: getUserSafeErrorMessage(err, "An error occurred. Please try again.") }]);
@@ -124,6 +130,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
       if (!res.ok) throw new Error(data.error || "Failed to compare");
       
       setChanges(data.changes);
+      if (data.guard) setCompareGuard(data.guard);
       setAnnouncement("Comparison complete.");
     } catch (err) {
       setError(getUserSafeErrorMessage(err, "An error occurred during comparison."));
@@ -262,6 +269,12 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-background/20">
+            {analyzeGuard && (
+              <div className="mb-4 p-3 bg-muted/50 border border-border rounded-[8px] text-[12px] text-muted-foreground flex gap-2">
+                <Info className="w-4 h-4 shrink-0" />
+                <p>Part of this result was replaced or left unverified because it could not be confirmed against the document.</p>
+              </div>
+            )}
             {/* TAB 1: SIMPLIFY */}
             <TabsContent value="summary" className="mt-0 outline-none h-full">
               {isAnalyzing ? null : (
@@ -291,11 +304,18 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
                       <Button onClick={handleCompare} disabled={isComparing} size="lg" className="rounded-[8px] w-full shadow-sm font-semibold text-[13px] uppercase tracking-wider">
                         {isComparing ? "Comparing..." : "Run Comparison"}
                       </Button>
-                      <Button variant="outline" onClick={() => { setDoc2Text(null); setChanges(null); }} className="rounded-[8px] w-full text-[13px] uppercase tracking-wider text-foreground">
+                      <Button variant="outline" onClick={() => { setDoc2Text(null); setChanges(null); setCompareGuard(null); }} className="rounded-[8px] w-full text-[13px] uppercase tracking-wider text-foreground">
                         Clear Second Document
                       </Button>
                     </div>
                     
+                    {compareGuard && (
+                      <div className="p-3 bg-muted/50 border border-border rounded-[8px] text-[12px] text-muted-foreground flex gap-2">
+                        <Info className="w-4 h-4 shrink-0" />
+                        <p>Part of this result was replaced or left unverified because it could not be confirmed against the document.</p>
+                      </div>
+                    )}
+
                     {changes && (
                       <AiOutput className="mt-6 space-y-4">
                         {changes.length === 0 && <p className="text-muted-foreground p-6 text-center border border-border rounded-[12px]">No material changes detected.</p>}
@@ -386,6 +406,12 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
                             <div className="p-3 bg-background/80 rounded-[8px] border border-border/50">
                               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Source Text</span>
                               <p className="font-serif italic text-[13px] text-muted-foreground leading-relaxed">&quot;{m.quote}&quot;</p>
+                            </div>
+                          )}
+                          {m.guard && (
+                            <div className="p-3 bg-muted/50 border border-border rounded-[8px] text-[12px] text-muted-foreground flex gap-2 mt-2">
+                              <Info className="w-4 h-4 shrink-0" />
+                              <p>Part of this result was replaced or left unverified because it could not be confirmed against the document.</p>
                             </div>
                           )}
                         </div>

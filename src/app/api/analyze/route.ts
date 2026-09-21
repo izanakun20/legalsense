@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateStructuredResponse } from '@/lib/gemini-client';
+import { generateGuardedResponse } from '@/lib/guard/output-guard';
+import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { SUMMARIZE_PROMPT, CLAUSE_DETECTION_PROMPT } from '@/lib/prompts';
 import { chunkText } from '@/lib/chunking';
 import { getUserSafeErrorMessage } from '@/lib/errors';
@@ -37,43 +38,59 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Document is too large and exceeds the maximum allowed processing budget (5 chunks)." }, { status: 400 });
     }
     
+    const guard: GuardMeta = {
+      forbiddenPhraseReplaced: false,
+      unverifiedQuoteCount: 0,
+      unverifiedItems: []
+    };
+
     // Process summarization
     let finalSummary = "";
     if (chunks.length === 1) {
-      const result = await generateStructuredResponse(SUMMARIZE_PROMPT(chunks[0]), summarySchema);
-      finalSummary = result.summary;
+      const result = await generateGuardedResponse(SUMMARIZE_PROMPT(chunks[0]), summarySchema);
+      finalSummary = result.data.summary;
+      if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
     } else {
       // Summarize each chunk then combine
       const summaries = await Promise.all(chunks.map(chunk => 
-        generateStructuredResponse(SUMMARIZE_PROMPT(chunk), summarySchema)
+        generateGuardedResponse(SUMMARIZE_PROMPT(chunk), summarySchema)
       ));
-      const combinedText = summaries.map(s => s.summary).join("\n\n");
-      const finalResult = await generateStructuredResponse(
+      if (summaries.some(s => s.forbiddenPhraseReplaced)) guard.forbiddenPhraseReplaced = true;
+      const combinedText = summaries.map(s => s.data.summary).join("\n\n");
+      const finalResult = await generateGuardedResponse(
         `Combine these section summaries into one cohesive document summary:\n${combinedText}`, 
         summarySchema
       );
-      finalSummary = finalResult.summary;
+      finalSummary = finalResult.data.summary;
+      if (finalResult.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
     }
 
     // Process clause detection sequentially to avoid hitting rate limits too quickly
     const allClauses = [];
     for (const chunk of chunks) {
-      const result = await generateStructuredResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema);
+      const result = await generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema);
+      if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
       
       // Verify quotes
-      result.clauses.forEach(clause => {
-        if (clause.quote && !documentText.includes(clause.quote)) {
+      result.data.clauses.forEach((clause, index) => {
+        if (clause.quote && !verifyQuote(clause.quote, documentText)) {
           clause.quote = "Quote omitted because it wasn't an exact match in the text.";
+          guard.unverifiedQuoteCount++;
+          guard.unverifiedItems?.push({ type: 'clause', index: allClauses.length + index });
         }
       });
       
-      allClauses.push(...result.clauses);
+      allClauses.push(...result.data.clauses);
     }
 
-    const responseData = {
+    const responseData: { summary: string; clauses: Record<string, unknown>[]; guard?: GuardMeta } = {
       summary: finalSummary,
       clauses: allClauses
     };
+
+    if (guard.forbiddenPhraseReplaced || guard.unverifiedQuoteCount > 0) {
+      responseData.guard = guard;
+    }
     
     return NextResponse.json(responseData);
   } catch (error) {

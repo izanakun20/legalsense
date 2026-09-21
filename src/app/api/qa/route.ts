@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateStructuredResponse } from '@/lib/gemini-client';
+import { generateGuardedResponse } from '@/lib/guard/output-guard';
+import { verifyQuote, GuardMeta } from '@/lib/guard/quote-verifier';
 import { QA_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
 import { isRateLimited } from '@/lib/rate-limit';
@@ -26,13 +27,25 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { documentText, question } = requestSchema.parse(body);
 
-    const result = await generateStructuredResponse(QA_PROMPT(documentText, question), qaSchema);
+    const { data: result, forbiddenPhraseReplaced } = await generateGuardedResponse(QA_PROMPT(documentText, question), qaSchema);
+
+    const guard: GuardMeta = {
+      forbiddenPhraseReplaced,
+      unverifiedQuoteCount: 0
+    };
 
     // Verify citation to prevent hallucinated quotes
-    if (result.quote && !documentText.includes(result.quote)) {
+    if (result.quote && !verifyQuote(result.quote, documentText)) {
       result.quote = null; // drop hallucinated quote
+      result.answer = "I can't find support for this in the document.";
+      guard.unverifiedQuoteCount++;
     }
-    return NextResponse.json(result);
+
+    if (!guard.forbiddenPhraseReplaced && guard.unverifiedQuoteCount === 0) {
+      return NextResponse.json(result);
+    }
+    
+    return NextResponse.json({ ...result, guard });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });

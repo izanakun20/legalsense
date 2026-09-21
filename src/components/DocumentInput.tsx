@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { UploadCloud, FileText, AlertCircle } from "lucide-react";
 import { getUserSafeErrorMessage } from "@/lib/errors";
 import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
+import { MAX_UPLOAD_SIZE } from "@/lib/constants";
 
 export function DocumentInput({ onParse }: { onParse: (text: string) => void }) {
   const [file, setFile] = useState<File | null>(null);
@@ -30,8 +31,8 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
         setFile(null);
         return;
       }
-      if (selected.size > 10 * 1024 * 1024) {
-        setError("File size exceeds 10MB limit.");
+      if (selected.size > MAX_UPLOAD_SIZE) {
+        setError(`File size exceeds ${MAX_UPLOAD_SIZE / (1024 * 1024)}MB limit.`);
         setFile(null);
         return;
       }
@@ -133,7 +134,7 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
                   {file ? file.name : "Select a document to upload"}
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-sm mb-6">
-                  Supports PDF, DOCX, and TXT files up to 10MB.
+                  Supports PDF, DOCX, and TXT files up to {MAX_UPLOAD_SIZE / (1024 * 1024)}MB.
                 </p>
                 <div className="h-10 px-6 inline-flex items-center justify-center rounded-full bg-secondary text-secondary-foreground text-sm font-medium transition-colors hover:bg-secondary/90 shadow-sm">
                   Browse files
