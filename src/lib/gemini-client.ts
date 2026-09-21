@@ -91,15 +91,16 @@ export async function generateStructuredResponse<T>(
         : `${prompt}\n\nYour last response was not valid JSON. Return ONLY the JSON object. Here was your last response: ${lastResponse}`;
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("AI execution timed out after 30 seconds.")), 30000)
+        setTimeout(() => reject(new Error("AI execution timed out after 60 seconds.")), 60000)
       );
 
       const response = await Promise.race([
         ai.models.generateContent({
-          model: modelId,
+          model: DEFAULT_MODEL,
           contents: callPrompt,
           config: {
             temperature: 0.1, // Low temperature for more deterministic JSON
+            responseMimeType: "application/json"
           }
         }),
         timeoutPromise
@@ -135,6 +136,7 @@ export async function generateStructuredResponse<T>(
       
       return validData;
     } catch (error) {
+      console.error("Gemini API Error in structured output:", error);
       attempt++;
       if (attempt >= 2) {
         throw new Error(`Failed to generate valid structured output after 2 attempts. Error: ${error instanceof Error ? error.message : 'Unknown'}`);
