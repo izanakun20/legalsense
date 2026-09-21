@@ -58,10 +58,11 @@ export default function WorkspacePage() {
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {documents.map(doc => (
-            <div 
+            <button 
+              type="button"
               key={doc.id}
               onClick={() => setActiveDocId(doc.id)}
-              className={`p-4 rounded-xl cursor-pointer flex items-center justify-between group transition-all ${
+              className={`w-full text-left p-4 rounded-xl cursor-pointer flex items-center justify-between group transition-all ${
                 activeDocId === doc.id 
                   ? 'bg-primary text-primary-foreground shadow-md scale-[1.02]' 
                   : 'bg-background border border-border hover:border-primary/30 text-foreground hover:shadow-sm'
@@ -80,7 +81,7 @@ export default function WorkspacePage() {
               >
                 <X className="w-4 h-4" />
               </button>
-            </div>
+            </button>
           ))}
           {documents.length === 0 && (
             <div className="flex flex-col items-center justify-center h-40 text-center px-4 border-2 border-dashed border-border rounded-xl">

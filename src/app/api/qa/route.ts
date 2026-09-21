@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { generateStructuredResponse } from '@/lib/gemini-client';
 import { QA_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limit';
 
 const requestSchema = z.object({
@@ -33,9 +32,6 @@ export async function POST(req: Request) {
     if (result.quote && !documentText.includes(result.quote)) {
       result.quote = null; // drop hallucinated quote
     }
-
-    console.log(sanitizeLogSnippet({ action: "Q&A answered" }));
-
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

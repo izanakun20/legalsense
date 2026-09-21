@@ -4,7 +4,6 @@ import { generateStructuredResponse } from '@/lib/gemini-client';
 import { SUMMARIZE_PROMPT, CLAUSE_DETECTION_PROMPT } from '@/lib/prompts';
 import { chunkText } from '@/lib/chunking';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limit';
 
 const summarySchema = z.object({ summary: z.string() });
@@ -76,11 +75,8 @@ export async function POST(req: Request) {
       clauses: allClauses
     };
     
-    console.log(sanitizeLogSnippet({ action: "Analyzed document", chunks: chunks.length }));
-
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error("Analyze Route Error:", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }

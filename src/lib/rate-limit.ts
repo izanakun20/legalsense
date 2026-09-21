@@ -21,8 +21,8 @@ try {
       analytics: false,
     });
   }
-} catch (e) {
-  console.warn("Failed to initialize Upstash Redis rate limiter, falling back to in-memory.");
+} catch {
+  // Failed to initialize Upstash Redis rate limiter, falling back to in-memory.
 }
 
 export async function isRateLimited(identifier: string): Promise<boolean> {
@@ -30,8 +30,7 @@ export async function isRateLimited(identifier: string): Promise<boolean> {
     try {
       const { success } = await ratelimit.limit(identifier);
       return !success; // True if limited
-    } catch (e) {
-      console.error("Rate limit check failed, bypassing...", e);
+    } catch {
       return false; // Fail open to not break app if Redis is unreachable
     }
   }

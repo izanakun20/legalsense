@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { generateStructuredResponse } from '@/lib/gemini-client';
 import { COMPARE_PROMPT } from '@/lib/prompts';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limit';
 
 const requestSchema = z.object({
@@ -41,8 +40,6 @@ export async function POST(req: Request) {
         change.quoteDoc2 = null;
       }
     });
-
-    console.log(sanitizeLogSnippet({ action: "Documents compared" }));
 
     return NextResponse.json(result);
   } catch (error) {

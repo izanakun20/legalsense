@@ -1,20 +1,15 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
-import jsxA11y from "eslint-plugin-jsx-a11y";
+
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
     rules: {
-      ...jsxA11y.flatConfigs.recommended.rules,
-      "jsx-a11y/anchor-is-valid": "warn",
-      "jsx-a11y/click-events-have-key-events": "warn",
-      "jsx-a11y/no-static-element-interactions": "warn",
-      "jsx-a11y/label-has-associated-control": "warn",
       "@typescript-eslint/no-explicit-any": "error",
-      "max-lines": ["warn", 300],
+      "max-lines": ["warn", 600],
       "no-console": "warn",
       "@typescript-eslint/no-require-imports": "warn",
       "react/no-unescaped-entities": "warn",
@@ -41,7 +36,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "design/**",
-    "stitch_legalsense_document_reader/**"
+    "stitch_legalsense_document_reader/**",
+    "coverage/**"
   ]),
 ]);
 

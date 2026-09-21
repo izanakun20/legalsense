@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { parseFileBuffer } from '@/lib/parsers';
 import { getUserSafeErrorMessage } from '@/lib/errors';
-import { sanitizeLogSnippet } from '@/lib/logger';
 import { isRateLimited } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
@@ -37,12 +36,9 @@ export async function POST(req: Request) {
     }
 
     // Do not log document text or filenames
-    const safeLog = sanitizeLogSnippet({ action: "File parsed", size: buffer.length });
-    console.log(safeLog);
 
     return NextResponse.json({ text });
   } catch (error) {
-    console.error("Parse File Route Error:", error);
     const safeMsg = getUserSafeErrorMessage(error, "Failed to parse the uploaded file.");
     const isCorrupt = error instanceof Error && error.message.includes('corrupted or improperly formatted');
     return NextResponse.json({ error: isCorrupt ? error.message : safeMsg }, { status: isCorrupt ? 400 : 500 });

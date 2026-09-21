@@ -20,13 +20,13 @@ export default function WorkspaceLayout({
               <span className="font-serif text-[20px] font-semibold text-primary tracking-tight">LegalSense</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6 ml-4">
-              <a href="#" className="text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors">How it works</a>
-              <a href="#" className="text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors">Safety & Guardrails</a>
-              <a href="#" className="text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+              <Link href="/how-it-works" className="text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors">How it works</Link>
+              <Link href="/safety" className="text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors">Safety & Guardrails</Link>
+              <Link href="/privacy" className="text-[15px] font-medium text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-[15px] font-medium text-muted-foreground hover:text-foreground px-4 py-2 hover:bg-muted rounded-md transition-colors">Documentation</a>
+            <Link href="/" className="text-[15px] font-medium text-muted-foreground hover:text-foreground px-4 py-2 hover:bg-muted rounded-md transition-colors">Documentation</Link>
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-2">
               <span className="material-symbols-outlined text-primary-foreground text-[18px]">person</span>
             </div>

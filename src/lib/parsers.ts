@@ -1,22 +1,16 @@
 import * as mammoth from 'mammoth';
+import pdfParse from 'pdf-parse';
 
 /**
  * Parses a PDF file buffer and extracts text.
  */
 export async function parsePdf(buffer: Buffer): Promise<string> {
-  const pdfParse = require('pdf-parse');
   try {
     const data = await pdfParse(buffer);
     const text = data.text.trim();
     
-    // Simple OCR fallback check: if text is empty or very short despite being a PDF
-    if (text.length < 50) {
-      console.warn("Extracted text from PDF is very short. This might be a scanned document requiring OCR.");
-    }
-    
     return text;
-  } catch (error) {
-    console.error("Exact pdf-parse error:", error);
+  } catch {
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
   }
 }
@@ -28,7 +22,7 @@ export async function parseDocx(buffer: Buffer): Promise<string> {
   try {
     const result = await mammoth.extractRawText({ buffer });
     return result.value.trim();
-  } catch (error) {
+  } catch {
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
   }
 }

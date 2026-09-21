@@ -76,7 +76,7 @@ export async function generateStructuredResponse<T>(
       let parsedObject;
       try {
         parsedObject = JSON.parse(sanitized);
-      } catch (parseError) {
+      } catch {
         // Fallback to jsonrepair
         const repaired = jsonrepair(sanitized);
         parsedObject = JSON.parse(repaired);
