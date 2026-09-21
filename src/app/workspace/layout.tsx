@@ -2,14 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 export default function WorkspaceLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const _pathname = usePathname();
 
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col font-sans">
