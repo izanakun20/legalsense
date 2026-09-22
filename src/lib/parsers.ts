@@ -1,29 +1,37 @@
 import * as mammoth from 'mammoth';
-// @ts-expect-error: Subpath import lacks type declarations, but it's identical to the main module
-import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+import { PDFParse } from 'pdf-parse';
 import { MAX_UPLOAD_SIZE, MAX_PDF_PAGES } from './constants';
 
 /**
  * Parses a PDF file buffer and extracts text.
  */
 export async function parsePdf(buffer: Buffer): Promise<string> {
-  let data;
+  let parser: PDFParse | null = null;
   try {
-    data = await pdfParse(buffer);
-  } catch {
+    parser = new PDFParse({ data: buffer });
+    const data = await parser.getText();
+
+    if (data.total > MAX_PDF_PAGES) {
+      throw new Error(`PDF exceeds the maximum allowed page count of ${MAX_PDF_PAGES} pages.`);
+    }
+
+    const text = data.text.trim();
+    if (!text) {
+      throw new Error("This appears to be a scanned PDF with no text layer. Please upload a text-searchable document.");
+    }
+
+    return text;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message.startsWith('PDF exceeds') || error.message.startsWith('This appears to be a scanned PDF'))
+    ) {
+      throw error;
+    }
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
+  } finally {
+    await parser?.destroy();
   }
-
-  if (data.numpages > MAX_PDF_PAGES) {
-    throw new Error(`PDF exceeds the maximum allowed page count of ${MAX_PDF_PAGES} pages.`);
-  }
-
-  const text = data.text.trim();
-  if (!text) {
-    throw new Error("This appears to be a scanned PDF with no text layer. Please upload a text-searchable document.");
-  }
-  
-  return text;
 }
 
 /**

@@ -14,7 +14,7 @@ export default defineConfig({
       ['**/*.test.tsx', 'jsdom'],
       ['**/*.test.ts', 'node'],
     ],
-    exclude: ['node_modules/**', 'evals/**/*.eval.ts'],
+    exclude: ['node_modules/**', '.next/**', 'evals/**/*.eval.ts'],
 
     coverage: {
       provider: 'v8',
