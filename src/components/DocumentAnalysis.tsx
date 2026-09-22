@@ -62,6 +62,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
 
   useEffect(() => {
     const analyze = async () => {
+      setError(null);
       setAnnouncement("Analyzing document, please wait.");
       try {
         const res = await fetch("/api/analyze", {
@@ -118,6 +119,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
 
   const handleCompare = async () => {
     if (!doc2Text) return;
+    setError(null);
     setIsComparing(true);
     setAnnouncement("Comparing documents, please wait.");
     try {
