@@ -21,6 +21,7 @@ describe('gemini-client', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     process.env.GEMINI_API_KEY = "test_key";
   });
 
@@ -73,14 +74,24 @@ describe('gemini-client', () => {
     expect(secondCallPrompt).toContain('Your last response was not valid JSON');
   });
 
-  it('should throw error if both attempts fail', async () => {
+  it('should throw error if all attempts fail', async () => {
+    // Spy on setTimeout to skip backoff delays so the test completes instantly
+    const timeoutSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation((fn: () => void) => {
+      fn();
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    });
+
     const { GoogleGenAI } = await import('@google/genai');
     const instance = new GoogleGenAI();
     const mockGenerateContent = instance.models.generateContent as unknown as import('vitest').Mock;
     
-    mockGenerateContent.mockResolvedValueOnce({ text: 'invalid json 2' });
+    // All calls return invalid JSON — none will match the 429 shortcut, all exhaust retries
+    mockGenerateContent.mockResolvedValue({ text: 'invalid json' });
 
-    await expect(generateStructuredResponse("test prompt fail", schema)).rejects.toThrow('Failed to generate valid structured output after 2 attempts.');
-    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    await expect(generateStructuredResponse("test prompt fail", schema))
+      .rejects.toThrow('Failed to generate valid structured output after 4 attempts.');
+    expect(mockGenerateContent).toHaveBeenCalledTimes(4);
+
+    timeoutSpy.mockRestore();
   });
 });
