@@ -19,6 +19,7 @@ const clausesSchema = z.object({
 });
 
 type Clause = z.infer<typeof clausesSchema>['clauses'][0];
+const MAX_CONCURRENT_GEMINI_CALLS = 2;
 
 const requestSchema = z.object({
   documentText: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters."),
@@ -27,6 +28,26 @@ const requestSchema = z.object({
 
 export const maxDuration = 10;
 export const runtime = 'edge';
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      results[index] = await mapper(items[index]);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(MAX_CONCURRENT_GEMINI_CALLS, items.length) }, worker),
+  );
+  return results;
+}
 
 export async function POST(req: Request) {
   try {
@@ -59,9 +80,9 @@ export async function POST(req: Request) {
         if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
       } else {
         // Summarize each chunk then combine
-        const summaries = await Promise.all(chunks.map(chunk => 
-          generateGuardedResponse(SUMMARIZE_PROMPT(chunk), summarySchema)
-        ));
+        const summaries = await mapWithConcurrency(chunks, chunk =>
+          generateGuardedResponse(SUMMARIZE_PROMPT(chunk), summarySchema),
+        );
         if (summaries.some(s => s.forbiddenPhraseReplaced)) guard.forbiddenPhraseReplaced = true;
         const combinedText = summaries.map(s => s.data.summary).join("\n\n");
         const finalResult = await generateGuardedResponse(
@@ -76,9 +97,9 @@ export async function POST(req: Request) {
     // Process clause detection in parallel for efficiency
     const allClauses: Clause[] = [];
     if (analysisType === 'clauses' || analysisType === 'all') {
-      const chunkResults = await Promise.all(chunks.map(chunk => 
-        generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema)
-      ));
+      const chunkResults = await mapWithConcurrency(chunks, chunk =>
+        generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema),
+      );
       
       chunkResults.forEach((result) => {
         if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
