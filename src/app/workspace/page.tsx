@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { DocumentInput } from "@/components/DocumentInput";
 import { DocumentAnalysis } from "@/components/DocumentAnalysis";
@@ -15,7 +15,7 @@ type SessionDoc = {
   text: string;
 };
 
-export default function WorkspacePage() {
+function WorkspacePageInner() {
   const [documents, setDocuments] = useState<SessionDoc[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -238,5 +238,12 @@ export default function WorkspacePage() {
         )}
       </div>
     </div>
+  );
+}
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={null}>
+      <WorkspacePageInner />
+    </Suspense>
   );
 }
