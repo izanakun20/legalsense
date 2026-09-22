@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Source_Serif_4, Courier_Prime } from "next/font/google";
+import { Inter, Source_Serif_4 } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Shell } from "@/components/Shell";
 import "./globals.css";
@@ -14,12 +14,6 @@ const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
 });
 
-const courierPrime = Courier_Prime({
-  variable: "--font-courier-prime",
-  weight: ["400", "700"],
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "LegalSense",
   description: "Understand what a document says, in plain language.",
@@ -30,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${sourceSerif.variable} ${courierPrime.variable} h-full antialiased`}
+      className={`${inter.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <head>
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

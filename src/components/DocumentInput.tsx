@@ -155,7 +155,7 @@ export function DocumentInput({ onParse }: { onParse: (text: string) => void }) 
             >
               <Textarea 
                 placeholder="Paste your legal document text here..."
-                className="min-h-[300px] font-mono text-sm leading-relaxed p-6 bg-background rounded-xl focus-visible:ring-primary border-border resize-none"
+                className="min-h-[300px] text-sm leading-relaxed p-6 bg-background rounded-xl focus-visible:ring-primary border-border resize-none"
                 value={pasteText}
                 onChange={(e) => {
                   setPasteText(e.target.value);
