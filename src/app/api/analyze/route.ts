@@ -21,7 +21,8 @@ const clausesSchema = z.object({
 type Clause = z.infer<typeof clausesSchema>['clauses'][0];
 
 const requestSchema = z.object({
-  documentText: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters.")
+  documentText: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters."),
+  analysisType: z.enum(['summary', 'clauses', 'all']).optional().default('all')
 });
 
 export const maxDuration = 10;
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { documentText } = requestSchema.parse(body);
+    const { documentText, analysisType } = requestSchema.parse(body);
 
     const chunks = chunkText(documentText);
 
@@ -51,51 +52,53 @@ export async function POST(req: Request) {
 
     // Process summarization
     let finalSummary = "";
-    if (chunks.length === 1) {
-      const result = await generateGuardedResponse(SUMMARIZE_PROMPT(chunks[0]), summarySchema);
-      finalSummary = result.data.summary;
-      if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
-    } else {
-      // Summarize each chunk then combine
-      const summaries = await Promise.all(chunks.map(chunk => 
-        generateGuardedResponse(SUMMARIZE_PROMPT(chunk), summarySchema)
-      ));
-      if (summaries.some(s => s.forbiddenPhraseReplaced)) guard.forbiddenPhraseReplaced = true;
-      const combinedText = summaries.map(s => s.data.summary).join("\n\n");
-      const finalResult = await generateGuardedResponse(
-        `Combine these section summaries into one cohesive document summary:\n${combinedText}`, 
-        summarySchema
-      );
-      finalSummary = finalResult.data.summary;
-      if (finalResult.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
+    if (analysisType === 'summary' || analysisType === 'all') {
+      if (chunks.length === 1) {
+        const result = await generateGuardedResponse(SUMMARIZE_PROMPT(chunks[0]), summarySchema);
+        finalSummary = result.data.summary;
+        if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
+      } else {
+        // Summarize each chunk then combine
+        const summaries = await Promise.all(chunks.map(chunk => 
+          generateGuardedResponse(SUMMARIZE_PROMPT(chunk), summarySchema)
+        ));
+        if (summaries.some(s => s.forbiddenPhraseReplaced)) guard.forbiddenPhraseReplaced = true;
+        const combinedText = summaries.map(s => s.data.summary).join("\n\n");
+        const finalResult = await generateGuardedResponse(
+          `Combine these section summaries into one cohesive document summary:\n${combinedText}`, 
+          summarySchema
+        );
+        finalSummary = finalResult.data.summary;
+        if (finalResult.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
+      }
     }
 
     // Process clause detection in parallel for efficiency
     const allClauses: Clause[] = [];
-    
-    const chunkResults = await Promise.all(chunks.map(chunk => 
-      generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema)
-    ));
-    
-    chunkResults.forEach((result) => {
-      if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
+    if (analysisType === 'clauses' || analysisType === 'all') {
+      const chunkResults = await Promise.all(chunks.map(chunk => 
+        generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema)
+      ));
       
-      // Verify quotes
-      result.data.clauses.forEach((clause: Clause, index: number) => {
-        if (clause.quote && !verifyQuote(clause.quote, documentText)) {
-          clause.quote = "Quote omitted because it wasn't an exact match in the text.";
-          guard.unverifiedQuoteCount++;
-          guard.unverifiedItems?.push({ type: 'clause', index: allClauses.length + index });
-        }
+      chunkResults.forEach((result) => {
+        if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
+        
+        // Verify quotes
+        result.data.clauses.forEach((clause: Clause, index: number) => {
+          if (clause.quote && !verifyQuote(clause.quote, documentText)) {
+            clause.quote = "Quote omitted because it wasn't an exact match in the text.";
+            guard.unverifiedQuoteCount++;
+            guard.unverifiedItems?.push({ type: 'clause', index: allClauses.length + index });
+          }
+        });
+        
+        allClauses.push(...result.data.clauses);
       });
-      
-      allClauses.push(...result.data.clauses);
-    });
+    }
 
-    const responseData: { summary: string; clauses: Record<string, unknown>[]; guard?: GuardMeta } = {
-      summary: finalSummary,
-      clauses: allClauses
-    };
+    const responseData: { summary?: string; clauses?: Record<string, unknown>[]; guard?: GuardMeta } = {};
+    if (analysisType === 'summary' || analysisType === 'all') responseData.summary = finalSummary;
+    if (analysisType === 'clauses' || analysisType === 'all') responseData.clauses = allClauses;
 
     if (guard.forbiddenPhraseReplaced || guard.unverifiedQuoteCount > 0) {
       responseData.guard = guard;

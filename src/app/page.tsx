@@ -1,6 +1,5 @@
 import React from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 
 import { buttonVariants } from '@/components/ui/button';
 import { Eye, ArrowRight } from 'lucide-react';

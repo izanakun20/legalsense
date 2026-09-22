@@ -61,6 +61,9 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
   // Accessibility announcements
   const [announcement, setAnnouncement] = useState<string>("");
 
+  const [isAnalyzingClauses, setIsAnalyzingClauses] = useState(false);
+  const [hasFetchedClauses, setHasFetchedClauses] = useState(false);
+
   useEffect(() => {
     const analyze = async () => {
       setError(null);
@@ -69,7 +72,7 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentText })
+          body: JSON.stringify({ documentText, analysisType: 'summary' })
         });
         const data = await res.json();
         
@@ -78,7 +81,6 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
         }
         
         setSummary(data.summary);
-        setClauses(data.clauses);
         if (data.guard) setAnalyzeGuard(data.guard);
         setAnnouncement("Analysis complete. Results are available in the tabs.");
       } catch (err) {
@@ -90,6 +92,35 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
     };
     analyze();
   }, [documentText]);
+
+  useEffect(() => {
+    const requiresClauses = ['highlight', 'options', 'actionable', 'attorney'].includes(activeTab);
+    if (requiresClauses && !clauses && !isAnalyzingClauses && !hasFetchedClauses) {
+      const fetchClauses = async () => {
+        setIsAnalyzingClauses(true);
+        setHasFetchedClauses(true);
+        setAnnouncement("Extracting clauses, please wait.");
+        try {
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ documentText, analysisType: 'clauses' })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setClauses(data.clauses);
+            if (data.guard && !analyzeGuard) setAnalyzeGuard(data.guard);
+            setAnnouncement("Clause extraction complete.");
+          }
+        } catch (err) {
+          setError(getUserSafeErrorMessage(err, "Failed to fetch clauses."));
+        } finally {
+          setIsAnalyzingClauses(false);
+        }
+      };
+      fetchClauses();
+    }
+  }, [activeTab, clauses, isAnalyzingClauses, documentText, hasFetchedClauses, analyzeGuard]);
 
   const handleAsk = async () => {
     if (!question.trim()) return;
