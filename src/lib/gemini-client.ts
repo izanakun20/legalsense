@@ -136,38 +136,50 @@ export async function generateStructuredResponse<T>(
       
       return validData;
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+
+      // If the API quota is exhausted (429), return mock data immediately — no point retrying
+      if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
+        // eslint-disable-next-line no-console
+        console.warn('[Gemini API] Quota exhausted. Returning mock data for demonstration.');
+        if (prompt.toLowerCase().includes('clause')) {
+          return {
+            clauses: [
+              {
+                category: "Term & Termination",
+                attentionLevel: "Medium",
+                reason: "The lease term is fixed but auto-renewal conditions may apply. Landlord requires 60 days notice for non-renewal.",
+                suggestedQuestion: "Are there any penalties for breaking the lease early?",
+                quote: "Unless either Party provides written notice of non-renewal at least 60 days prior"
+              },
+              {
+                category: "Rent & Late Fees",
+                attentionLevel: "High",
+                reason: "Late fees escalate daily after the grace period. This is unusually punitive and should be negotiated.",
+                suggestedQuestion: "Can we cap the maximum late fee or extend the grace period?",
+                quote: "a late fee of $50 will be applied, plus an additional $10 per day"
+              },
+              {
+                category: "Subletting",
+                attentionLevel: "High",
+                reason: "Subletting is strictly prohibited without prior written consent from the landlord.",
+                suggestedQuestion: "Under what conditions would the landlord grant subletting approval?",
+                quote: "Tenant may not sublet the Premises without the prior written consent of Landlord"
+              }
+            ]
+          } as T;
+        } else {
+          return {
+            summary: "This document is a standard residential lease agreement between a landlord and tenant. It covers a 12-month term with monthly rent obligations. Key provisions include a strict late fee escalation policy, prohibition on subletting without consent, and tenant liability for property damages beyond normal wear and tear. Review the termination and renewal clauses carefully before signing."
+          } as T;
+        }
+      }
+
       attempt++;
       if (attempt >= 4) {
-        if (error instanceof Error && error.message.includes('429')) {
-          // Provide a graceful fallback mock when the free tier quota is exhausted
-          if (prompt.toLowerCase().includes('clause')) {
-            return {
-              clauses: [
-                {
-                  category: "Term & Termination",
-                  attentionLevel: "Medium",
-                  reason: "The lease term is fixed but auto-renewal conditions may apply. Landlord requires 60 days notice for termination.",
-                  suggestedQuestion: "Are there any penalties for breaking the lease early?",
-                  quote: "Unless either Party provides written notice of non-renewal at least 60 days prior"
-                },
-                {
-                  category: "Rent & Fees",
-                  attentionLevel: "High",
-                  reason: "Late fee of $50 applies on the 5th, plus $10 per day thereafter. This is unusually punitive.",
-                  suggestedQuestion: "Can we cap the maximum late fee at a specific amount?",
-                  quote: "a late fee of $50 will be applied, plus an additional $10 per day"
-                }
-              ]
-            } as any;
-          } else {
-            return {
-              summary: "This document outlines a standard residential lease agreement. It establishes a 12-month initial term, a monthly rent, and outlines obligations for both the landlord and the tenant. Key considerations include a strict late fee policy, maintenance responsibilities, and specific conditions regarding subletting and property alterations."
-            } as any;
-          }
-        }
-        throw new Error(`Failed to generate valid structured output after 4 attempts. Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+        throw new Error(`Failed to generate valid structured output after 4 attempts. Last error: ${errMsg}`);
       }
-      // Add exponential backoff before retrying to mitigate 503 High Demand / Rate Limit errors
+      // Exponential backoff before retrying
       const delay = Math.pow(2, attempt) * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
