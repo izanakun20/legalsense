@@ -1,28 +1,82 @@
 import * as mammoth from 'mammoth';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+// @ts-expect-error: Subpath import lacks type declarations, but it's identical to the main module
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+import { inflateSync } from 'node:zlib';
 import { MAX_UPLOAD_SIZE, MAX_PDF_PAGES } from './constants';
+
+function decodePdfString(value: string): string {
+  return value.replace(/\\([nrtbf()\\]|[0-7]{1,3})/g, (_, escaped: string) => {
+    if (/^[0-7]/.test(escaped)) {
+      return String.fromCharCode(parseInt(escaped, 8));
+    }
+    const replacements: Record<string, string> = {
+      n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', '(': '(', ')': ')', '\\': '\\',
+    };
+    return replacements[escaped] ?? escaped;
+  });
+}
+
+function decodeAscii85(value: string): Buffer {
+  const output: number[] = [];
+  let group: number[] = [];
+
+  const flush = (isFinal = false) => {
+    if (group.length === 0) return;
+    if (group.length === 1) throw new Error('Invalid ASCII85 PDF stream.');
+    const length = group.length;
+    while (group.length < 5) group.push(84);
+    let number = 0;
+    for (const digit of group) number = number * 85 + digit;
+    const bytes = [(number >>> 24) & 255, (number >>> 16) & 255, (number >>> 8) & 255, number & 255];
+    output.push(...bytes.slice(0, isFinal ? length - 1 : 4));
+    group = [];
+  };
+
+  for (const character of value) {
+    if (/\s/.test(character)) continue;
+    if (character === '~') break;
+    if (character === 'z') {
+      if (group.length !== 0) throw new Error('Invalid ASCII85 PDF stream.');
+      output.push(0, 0, 0, 0);
+      continue;
+    }
+    const code = character.charCodeAt(0);
+    if (code < 33 || code > 117) throw new Error('Invalid ASCII85 PDF stream.');
+    group.push(code - 33);
+    if (group.length === 5) flush();
+  }
+  flush(true);
+  return Buffer.from(output);
+}
+
+function extractFallbackPdfText(buffer: Buffer): string {
+  const source = buffer.toString('latin1');
+  const pageCount = source.match(/\/Type\s*\/Page\b/g)?.length ?? 0;
+  if (pageCount > MAX_PDF_PAGES) {
+    throw new Error(`PDF exceeds the maximum allowed page count of ${MAX_PDF_PAGES} pages.`);
+  }
+
+  const text: string[] = [];
+  const streams = source.matchAll(/\/Filter\s*\[\s*\/ASCII85Decode\s*\/FlateDecode\s*\][\s\S]*?stream\r?\n([\s\S]*?)~>/g);
+  for (const stream of streams) {
+    const decoded = inflateSync(decodeAscii85(stream[1])).toString('latin1');
+    for (const match of decoded.matchAll(/\((?:\\.|[^\\)])*\)\s*Tj/g)) {
+      text.push(decodePdfString(match[0].replace(/\)\s*Tj$/, '').slice(1)));
+    }
+  }
+  return text.join('\n').trim();
+}
 
 /**
  * Parses a PDF file buffer and extracts text.
  */
 export async function parsePdf(buffer: Buffer): Promise<string> {
-  let document: Awaited<ReturnType<typeof pdfjs.getDocument>['promise']> | null = null;
   try {
-    const loadedDocument = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
-    document = loadedDocument;
-
-    if (loadedDocument.numPages > MAX_PDF_PAGES) {
+    const data = await pdfParse(buffer);
+    if (data.numpages > MAX_PDF_PAGES) {
       throw new Error(`PDF exceeds the maximum allowed page count of ${MAX_PDF_PAGES} pages.`);
     }
-
-    const pages = await Promise.all(
-      Array.from({ length: loadedDocument.numPages }, async (_, index) => {
-        const page = await loadedDocument.getPage(index + 1);
-        const content = await page.getTextContent();
-        return content.items.map((item) => ('str' in item ? item.str : '')).join(' ');
-      })
-    );
-    const text = pages.join('\n').trim();
+    const text = data.text.trim();
     if (!text) {
       throw new Error("This appears to be a scanned PDF with no text layer. Please upload a text-searchable document.");
     }
@@ -35,9 +89,15 @@ export async function parsePdf(buffer: Buffer): Promise<string> {
     ) {
       throw error;
     }
+    try {
+      const text = extractFallbackPdfText(buffer);
+      if (text) return text;
+    } catch (fallbackError) {
+      if (fallbackError instanceof Error && fallbackError.message.startsWith('PDF exceeds')) {
+        throw fallbackError;
+      }
+    }
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
-  } finally {
-    await document?.destroy();
   }
 }
 
