@@ -47,22 +47,20 @@ export default function WorkspaceLayout({
                 <FileText aria-hidden="true" className="w-[20px] h-[20px]" />
                 Annotated Review
               </Link>
-              <button 
-                type="button"
-                className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50 opacity-60 cursor-not-allowed`}
-                title="Coming Soon"
+              <Link 
+                href="/workspace?tab=highlight"
+                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50"
               >
                 <Gavel aria-hidden="true" className="w-[20px] h-[20px]" />
                 Clause Breakdown
-              </button>
-              <button 
-                type="button"
-                className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50 opacity-60 cursor-not-allowed`}
-                title="Coming Soon"
+              </Link>
+              <Link 
+                href="/workspace?tab=summary"
+                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50"
               >
                 <Shield aria-hidden="true" className="w-[20px] h-[20px]" />
                 Risk Matrix
-              </button>
+              </Link>
             </nav>
           </div>
           <div className="px-4">

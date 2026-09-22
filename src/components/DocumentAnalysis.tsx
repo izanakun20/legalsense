@@ -37,13 +37,13 @@ type CompareChange = {
   quoteDoc2: string | null;
 };
 
-export function DocumentAnalysis({ documentText }: { documentText: string }) {
+export function DocumentAnalysis({ documentText, initialTab }: { documentText: string; initialTab?: string }) {
   const [summary, setSummary] = useState<string | null>(null);
   const [clauses, setClauses] = useState<Clause[] | null>(null);
   const [analyzeGuard, setAnalyzeGuard] = useState<GuardMeta | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(USE_CASES[0].tabOrRoute);
+  const [activeTab, setActiveTab] = useState(initialTab ?? USE_CASES[0].tabOrRoute);
   
   const [hoveredClauseId, setHoveredClauseId] = useState<number | null>(null);
 

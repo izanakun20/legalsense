@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DocumentInput } from "@/components/DocumentInput";
 import { DocumentAnalysis } from "@/components/DocumentAnalysis";
 import { FileText, Plus, X, ArrowRight } from "lucide-react";
@@ -17,6 +18,8 @@ type SessionDoc = {
 export default function WorkspacePage() {
   const [documents, setDocuments] = useState<SessionDoc[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as 'summary' | 'compare' | 'highlight' | 'ask' | null;
 
   const activeDoc = documents.find(d => d.id === activeDocId);
 
@@ -230,7 +233,7 @@ export default function WorkspacePage() {
               </Button>
             </div>
             
-            <DocumentAnalysis documentText={activeDoc.text} />
+            <DocumentAnalysis documentText={activeDoc.text} initialTab={tabParam ?? undefined} />
           </div>
         )}
       </div>
