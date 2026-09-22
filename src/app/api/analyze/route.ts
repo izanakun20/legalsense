@@ -100,6 +100,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     const safeMsg = getUserSafeErrorMessage(error, "Failed to analyze document.");
+    // eslint-disable-next-line no-console
+    console.error("API Analyze Error:", error);
     return NextResponse.json({ error: safeMsg }, { status: 500 });
   }
 }

@@ -8,6 +8,7 @@ import { DocumentInput } from "./DocumentInput";
 import { getUserSafeErrorMessage } from "@/lib/errors";
 import { Info, Search, Download, FileText, ArrowRight, AlertTriangle } from "lucide-react";
 import { AiOutput } from "./AiOutput";
+import { ClauseCard } from "./ClauseCard";
 import { USE_CASES } from "@/lib/product/use-cases";
 import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
 
@@ -220,11 +221,6 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
     );
   };
 
-  const getRiskBadge = (level: string) => {
-    if (level === 'High') return <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wider rounded-[6px] font-bold bg-[#3A1712] border border-[#FFB4A9] text-[#FFB4A9]"><span className="text-[10px]">▲</span> High Risk</span>;
-    if (level === 'Medium') return <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wider rounded-[6px] font-bold bg-[#3A2A0B] border border-[#FFD28A] text-[#FFD28A]"><span className="text-[10px]">◆</span> Medium Risk</span>;
-    return <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] uppercase tracking-wider rounded-[6px] font-bold bg-[#12283F] border border-[#A9CFF5] text-[#A9CFF5]"><span className="text-[10px]">●</span> Low Risk</span>;
-  };
 
   return (
     <div className="w-full flex flex-col xl:flex-row gap-6 min-h-[700px] h-full">
@@ -284,16 +280,69 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
             {/* TAB 1: SIMPLIFY */}
             <TabsContent value="summary" className="mt-0 outline-none h-full">
               {isAnalyzing ? null : (
-                <div className="space-y-6">
-                  <h3 className="text-xl font-serif text-foreground">Plain-Language Summary</h3>
-                  <AiOutput>
-                    <div className="prose prose-slate dark:prose-invert max-w-none">
-                      <p className="whitespace-pre-wrap leading-relaxed text-[14px] text-foreground">{summary}</p>
+                <div className="space-y-5">
+                  {/* Risk heat-map bar */}
+                  {clauses && clauses.length > 0 && (() => {
+                    const high = clauses.filter(c => c.attentionLevel === 'High').length;
+                    const med  = clauses.filter(c => c.attentionLevel === 'Medium').length;
+                    const low  = clauses.filter(c => c.attentionLevel === 'Low').length;
+                    const total = clauses.length;
+                    return (
+                      <div className="rounded-[14px] border border-border bg-card p-5 space-y-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider">Risk Snapshot</h3>
+                          <span className="text-[12px] text-muted-foreground">{total} clause{total !== 1 ? 's' : ''} flagged</span>
+                        </div>
+                        {/* Segmented bar */}
+                        <div className="flex rounded-full overflow-hidden h-3 gap-px">
+                          {high > 0 && <div style={{ width: `${(high/total)*100}%` }} className="bg-[#FF6B6B] transition-all" />}
+                          {med  > 0 && <div style={{ width: `${(med/total)*100}%`  }} className="bg-[#FFB347] transition-all" />}
+                          {low  > 0 && <div style={{ width: `${(low/total)*100}%`  }} className="bg-[#5ED0C3] transition-all" />}
+                        </div>
+                        <div className="flex gap-4 text-[12px]">
+                          {high > 0 && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#FF6B6B]" /><span className="text-muted-foreground">{high} High</span></span>}
+                          {med  > 0 && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#FFB347]" /><span className="text-muted-foreground">{med} Medium</span></span>}
+                          {low  > 0 && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#5ED0C3]" /><span className="text-muted-foreground">{low} Low</span></span>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Quick clause chips */}
+                  {clauses && clauses.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {clauses.map((c, i) => {
+                        const color = c.attentionLevel === 'High'   ? 'bg-[#FF6B6B]/15 text-[#FF6B6B] border-[#FF6B6B]/30'
+                                    : c.attentionLevel === 'Medium' ? 'bg-[#FFB347]/15 text-[#FFB347] border-[#FFB347]/30'
+                                    :                                  'bg-[#5ED0C3]/15 text-[#5ED0C3] border-[#5ED0C3]/30';
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => { setActiveTab('highlight'); setHoveredClauseId(i); }}
+                            className={`px-3 py-1 rounded-full text-[11px] font-semibold border cursor-pointer transition-opacity hover:opacity-80 ${color}`}
+                          >
+                            {c.category}
+                          </button>
+                        );
+                      })}
                     </div>
-                  </AiOutput>
+                  )}
+
+                  {/* Plain language summary card */}
+                  <div className="rounded-[14px] border border-border bg-card p-5 shadow-sm space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+                      <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider">Plain-Language Summary</h3>
+                    </div>
+                    <AiOutput>
+                      <p className="whitespace-pre-wrap leading-[1.85] text-[14px] text-foreground">{summary}</p>
+                    </AiOutput>
+                  </div>
                 </div>
               )}
             </TabsContent>
+
 
             {/* TAB 2: COMPARE */}
             <TabsContent value="compare" className="mt-0 outline-none h-full">
@@ -347,47 +396,32 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
             {/* TAB 3: HIGHLIGHT (CLAUSES) */}
             <TabsContent value="highlight" className="mt-0 outline-none h-full">
               {isAnalyzing ? null : (
-                <div className="space-y-6">
-                  <h3 className="text-xl font-serif text-foreground mb-2">Clause Annotations</h3>
-                  <AiOutput>
-                    <div className="space-y-5 relative">
-                      {/* Hairline structural line linking annotations in theory */}
-                      <div className="absolute left-4 top-0 bottom-0 w-[1px] bg-[#26354E] -z-10 hidden sm:block" />
-                      
-                      {clauses?.map((c, i) => (
-                        <div 
-                          key={i} 
-                          className={`bg-card border p-5 rounded-[12px] shadow-sm space-y-4 transition-all duration-200 cursor-pointer ${
-                            hoveredClauseId === i ? 'border-primary ring-1 ring-primary/50 -translate-y-0.5' : 'border-[#26354E] hover:border-[#7C8798]'
-                          }`}
-                          onMouseEnter={() => setHoveredClauseId(i)}
-                          onMouseLeave={() => setHoveredClauseId(null)}
-                          onClick={() => {
-                            const el = document.getElementById(`clause-highlight-${i}`);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }}
-                        >
-                          <div className="flex flex-col gap-3">
-                            <div className="flex justify-between items-start">
-                              {getRiskBadge(c.attentionLevel)}
-                            </div>
-                            <span className="font-serif text-[18px] text-foreground">{c.category}</span>
-                          </div>
-                          
-                          <div>
-                            <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                              Margin Intelligence
-                            </span>
-                            <p className="text-[14px] text-muted-foreground leading-relaxed font-sans">{c.reason}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </AiOutput>
+                <div className="space-y-4">
+                  {clauses && clauses.length > 0 && (
+                    <p className="text-[12px] text-muted-foreground">
+                      Click a clause card to jump to its location in the document.
+                    </p>
+                  )}
+                  <div className="space-y-3">
+                    {clauses?.map((c, i) => (
+                      <ClauseCard
+                        key={i}
+                        clause={c}
+                        index={i}
+                        isActive={hoveredClauseId === i}
+                        onMouseEnter={() => setHoveredClauseId(i)}
+                        onMouseLeave={() => setHoveredClauseId(null)}
+                        onClick={() => {
+                          const el = document.getElementById(`clause-highlight-${i}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </TabsContent>
+
 
             {/* TAB 4: ASK */}
             <TabsContent value="ask" className="mt-0 outline-none h-full flex flex-col">
