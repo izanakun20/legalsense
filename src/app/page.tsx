@@ -86,7 +86,7 @@ export default function LandingPage() {
             <span className="italic font-light text-foreground/80">Translated for you.</span>
           </h1>
           <p className="text-[16px] md:text-[18px] text-muted-foreground max-w-xl font-normal leading-relaxed text-balance mb-8">
-            LegalSense isolates predatory terms, clarifies obligations in plain English, and prepares calibrated questions for your licensed attorney.
+            LegalSense highlights clauses that deserve a closer look, clarifies obligations in plain English, and prepares calibrated questions for your licensed attorney.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 text-[13.5px]">
             <a href="#folio" className={buttonVariants({ size: "lg", className: "rounded-full shadow-sm flex items-center gap-2" })}>
