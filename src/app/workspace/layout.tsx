@@ -64,8 +64,8 @@ export default function WorkspaceLayout({
           </div>
           <div className="px-4">
             <div className="p-4 rounded-lg bg-background border border-border shadow-sm">
-              <span className="text-[12px] font-semibold text-primary block mb-1">Model Engine</span>
-              <span className="text-[13px] text-muted-foreground block">Precision Legal LLM v4.2 • Active</span>
+              <span className="text-[12px] font-semibold text-primary block mb-1">AI Model</span>
+              <span className="text-[13px] text-muted-foreground block">Powered by Google's Gemini API • Active</span>
             </div>
           </div>
         </aside>

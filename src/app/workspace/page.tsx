@@ -114,7 +114,7 @@ export default function WorkspacePage() {
             <div className="max-w-3xl w-full text-center mb-12">
               <div className="inline-flex items-center justify-center px-3 py-1 rounded-full border border-border bg-card shadow-sm mb-6">
                 <span className="flex h-2 w-2 rounded-full bg-secondary mr-2"></span>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Analysis Engine Standby • Model v4.2</span>
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">AI Analysis Standby</span>
               </div>
               <h1 className="font-serif text-[42px] md:text-[52px] text-primary tracking-tight leading-tight mb-4">
                 Contractual Clarity Workspace

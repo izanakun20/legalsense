@@ -232,7 +232,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Source Document</span>
           <span className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-secondary"></span>
-            Analysis Engine Active
+            Analysis Active
           </span>
         </div>
         <div className="p-6 md:p-8 lg:p-12 overflow-y-auto flex-1">
@@ -396,7 +396,7 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
                 {messages.map((m, i) => (
                   <div key={i} className={`p-4 rounded-[12px] shadow-sm border ${m.role === 'user' ? 'bg-primary text-primary-foreground ml-6 border-transparent' : 'bg-card mr-6 border-border'}`}>
                     <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${m.role === 'user' ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                      {m.role === 'user' ? 'You' : 'Analysis Engine'}
+                      {m.role === 'user' ? 'You' : 'AI Assistant'}
                     </p>
                     {m.role === 'assistant' ? (
                       <AiOutput>
