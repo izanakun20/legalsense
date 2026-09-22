@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { parseFileBuffer } from '../parsers';
 import fs from 'fs';
 import path from 'path';
@@ -6,16 +6,6 @@ import path from 'path';
 // Load fixtures
 const testDataDir = path.join(process.cwd(), 'test_data');
 const getFixture = (filename: string) => fs.readFileSync(path.join(testDataDir, filename));
-
-vi.mock('pdf-parse', () => ({
-  PDFParse: class {
-    getText = vi.fn().mockResolvedValue({
-      total: 1,
-      text: 'COMMERCIAL LEASE AGREEMENT text.',
-    });
-    destroy = vi.fn().mockResolvedValue(undefined);
-  },
-}));
 
 describe('parsers', () => {
   it('parses valid TXT', async () => {
@@ -27,7 +17,7 @@ describe('parsers', () => {
   it('parses valid PDF', async () => {
     const buffer = getFixture('lease_v1.pdf');
     const text = await parseFileBuffer(buffer, 'lease_v1.pdf', 'application/pdf');
-    expect(text).toContain('COMMERCIAL LEASE AGREEMENT');
+    expect(text).toContain('RESIDENTIAL LEASE AGREEMENT');
   });
 
   it('parses valid DOCX', async () => {

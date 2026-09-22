@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  serverExternalPackages: ['pdf-parse'],
+  serverExternalPackages: ['pdfjs-dist'],
 };
 
 export default nextConfig;

@@ -1,21 +1,28 @@
 import * as mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { MAX_UPLOAD_SIZE, MAX_PDF_PAGES } from './constants';
 
 /**
  * Parses a PDF file buffer and extracts text.
  */
 export async function parsePdf(buffer: Buffer): Promise<string> {
-  let parser: PDFParse | null = null;
+  let document: Awaited<ReturnType<typeof pdfjs.getDocument>['promise']> | null = null;
   try {
-    parser = new PDFParse({ data: buffer });
-    const data = await parser.getText();
+    const loadedDocument = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+    document = loadedDocument;
 
-    if (data.total > MAX_PDF_PAGES) {
+    if (loadedDocument.numPages > MAX_PDF_PAGES) {
       throw new Error(`PDF exceeds the maximum allowed page count of ${MAX_PDF_PAGES} pages.`);
     }
 
-    const text = data.text.trim();
+    const pages = await Promise.all(
+      Array.from({ length: loadedDocument.numPages }, async (_, index) => {
+        const page = await loadedDocument.getPage(index + 1);
+        const content = await page.getTextContent();
+        return content.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+      })
+    );
+    const text = pages.join('\n').trim();
     if (!text) {
       throw new Error("This appears to be a scanned PDF with no text layer. Please upload a text-searchable document.");
     }
@@ -30,7 +37,7 @@ export async function parsePdf(buffer: Buffer): Promise<string> {
     }
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
   } finally {
-    await parser?.destroy();
+    await document?.destroy();
   }
 }
 
