@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { User, FileText, Gavel, Shield } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function WorkspaceLayout({
   children,
@@ -26,6 +27,7 @@ export default function WorkspaceLayout({
           </div>
           <div className="flex items-center gap-4">
             <Link href="/" className="text-[15px] font-medium text-muted-foreground hover:text-foreground px-4 py-2 hover:bg-muted rounded-md transition-colors">Documentation</Link>
+            <ThemeToggle />
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-2">
               <User aria-hidden="true" className="text-primary-foreground w-[18px] h-[18px]" />
             </div>
