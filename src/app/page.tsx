@@ -29,7 +29,7 @@ export default function LandingPage() {
         <>You cannot let a friend, subletter, or replacement roommate take over without written sign-off, and the landlord has the legal power to say no for <em>any reason</em>, or without giving a reason at all.</>
       ),
       attorneyQuestion: `“Can we strike ‘sole and absolute discretion’ and replace it with ‘consent shall not be unreasonably withheld, delayed, or conditioned’?”`,
-      statute: `Under NY Real Property Law § 226-b, tenants in dwellings of 4+ units hold statutory rights to sublease with reasonable notice.`
+      statute: `Many jurisdictions grant tenants statutory rights to sublease with reasonable notice.`
     },
     autorenew: {
       docName: "Commercial_SaaS_Service_Master.pdf",
@@ -48,7 +48,7 @@ export default function LandingPage() {
       ),
       plainEnglish: `If you miss the narrow cancelation window 3 months before your contract year ends, you are locked in for another full year with zero option for an early exit.`,
       attorneyQuestion: `“Can we shorten the advance notice requirement to 30 days, or insert a mandatory reminder clause 15 days before the deadline?”`,
-      statute: `Several states (including CA & NY Gen. Oblig. Law § 5-903) enforce statutory restrictions requiring prior written reminder notices before auto-renewals trigger.`
+      statute: `Many consumer protection laws enforce statutory restrictions requiring prior written reminder notices before auto-renewals trigger.`
     },
     cleaning: {
       docName: "Standard_Tenancy_Addendum_2025.pdf",
@@ -170,7 +170,7 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <div className="pt-8 flex items-center justify-between text-[12px] text-muted-foreground">
-                  <span>Standard Form Document • New York Jurisdiction</span>
+                  <span>Standard Form Document • General Jurisdiction</span>
                   <span className="text-muted-foreground/80 font-serif italic">§ Folio verified</span>
                 </div>
               </div>
@@ -215,7 +215,7 @@ export default function LandingPage() {
                     <Lock aria-hidden="true" className="w-[14px] h-[14px]" />
                     Server-side processing
                   </span>
-                  <span>Never stored or trained</span>
+                  <span>Not stored after your session ends</span>
                 </div>
               </div>
             </div>
