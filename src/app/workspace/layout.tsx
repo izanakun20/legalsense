@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { User, FileText, Gavel, Shield } from "lucide-react";
 
 export default function WorkspaceLayout({
   children,
@@ -26,7 +27,7 @@ export default function WorkspaceLayout({
           <div className="flex items-center gap-4">
             <Link href="/" className="text-[15px] font-medium text-muted-foreground hover:text-foreground px-4 py-2 hover:bg-muted rounded-md transition-colors">Documentation</Link>
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-2">
-              <span className="material-symbols-outlined text-primary-foreground text-[18px]">person</span>
+              <User aria-hidden="true" className="text-primary-foreground w-[18px] h-[18px]" />
             </div>
           </div>
         </div>
@@ -41,7 +42,7 @@ export default function WorkspaceLayout({
                 href="/workspace"
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] bg-background border border-border shadow-sm text-primary font-semibold`}
               >
-                <span className="material-symbols-outlined text-[20px]">description</span>
+                <FileText aria-hidden="true" className="w-[20px] h-[20px]" />
                 Annotated Review
               </Link>
               <button 
@@ -49,7 +50,7 @@ export default function WorkspaceLayout({
                 className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50 opacity-60 cursor-not-allowed`}
                 title="Coming Soon"
               >
-                <span className="material-symbols-outlined text-[20px]">rule</span>
+                <Gavel aria-hidden="true" className="w-[20px] h-[20px]" />
                 Clause Breakdown
               </button>
               <button 
@@ -57,7 +58,7 @@ export default function WorkspaceLayout({
                 className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted/50 opacity-60 cursor-not-allowed`}
                 title="Coming Soon"
               >
-                <span className="material-symbols-outlined text-[20px]">shield</span>
+                <Shield aria-hidden="true" className="w-[20px] h-[20px]" />
                 Risk Matrix
               </button>
             </nav>

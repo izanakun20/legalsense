@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 
 import { buttonVariants } from '@/components/ui/button';
+import { AlertTriangle, Clock, DollarSign, Eye, ArrowRight, Focus, MessageCircle, Scale, Lock } from 'lucide-react';
 
 export default function LandingPage() {
   const [activeClause, setActiveClause] = useState<'sublet' | 'autorenew' | 'cleaning'>('sublet');
@@ -19,7 +20,7 @@ export default function LandingPage() {
       ),
       riskBadge: (
         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive bg-destructive/10 px-2.5 py-0.5 rounded-full">
-          <span className="material-symbols-outlined text-[13px]">warning</span>
+          <AlertTriangle aria-hidden="true" className="w-[13px] h-[13px]" />
           <span>Unilateral Discretion</span>
         </span>
       ),
@@ -40,7 +41,7 @@ export default function LandingPage() {
       ),
       riskBadge: (
         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full">
-          <span className="material-symbols-outlined text-[13px]">schedule</span>
+          <Clock aria-hidden="true" className="w-[13px] h-[13px]" />
           <span>Trap Window: 90 Days</span>
         </span>
       ),
@@ -59,7 +60,7 @@ export default function LandingPage() {
       ),
       riskBadge: (
         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive bg-destructive/10 px-2.5 py-0.5 rounded-full">
-          <span className="material-symbols-outlined text-[13px]">monetization_on</span>
+          <DollarSign aria-hidden="true" className="w-[13px] h-[13px]" />
           <span>Unlawful Nonrefundable Fee</span>
         </span>
       ),
@@ -89,12 +90,12 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 text-[13.5px]">
             <a href="#folio" className={buttonVariants({ size: "lg", className: "rounded-full shadow-sm flex items-center gap-2" })}>
-              <span className="material-symbols-outlined text-[18px]">visibility</span>
+              <Eye aria-hidden="true" className="w-[18px] h-[18px]" />
               <span>Explore The Folio</span>
             </a>
             <a href="#sandbox" className={buttonVariants({ variant: "secondary", size: "lg", className: "rounded-full shadow-sm flex items-center gap-2" })}>
               <span>Test Instant Clarity</span>
-              <span className="material-symbols-outlined text-[16px] text-muted-foreground">arrow_forward</span>
+              <ArrowRight aria-hidden="true" className="text-muted-foreground w-[16px] h-[16px]" />
             </a>
           </div>
         </section>
@@ -153,7 +154,7 @@ export default function LandingPage() {
                     <div className="absolute -left-1 top-4 bottom-4 w-1 bg-secondary rounded-full"></div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[11px] font-semibold text-secondary uppercase tracking-[0.14em] flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[15px]">center_focus_strong</span>
+                        <Focus aria-hidden="true" className="w-[15px] h-[15px]" />
                         Clarity Lens Highlight
                       </span>
                       <span className="text-[11px] text-muted-foreground/80">Verbatim Extract</span>
@@ -192,7 +193,7 @@ export default function LandingPage() {
 
                   <div className="p-4 rounded-xl bg-card border border-border shadow-sm mt-6">
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase text-muted-foreground mb-1.5">
-                      <span className="material-symbols-outlined text-[15px] text-secondary">chat</span>
+                      <MessageCircle aria-hidden="true" className="text-secondary w-[15px] h-[15px]" />
                       Attorney Briefing Question:
                     </div>
                     <p className="font-serif italic text-[14.5px] text-foreground leading-relaxed">
@@ -201,7 +202,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="mt-6 flex items-start gap-2.5 text-[12px] text-muted-foreground">
-                    <span className="material-symbols-outlined text-[16px] text-secondary mt-0.5">balance</span>
+                    <Scale aria-hidden="true" className="text-secondary mt-0.5 w-[16px] h-[16px]" />
                     <p className="leading-relaxed">
                       {folioData[activeClause].statute}
                     </p>
@@ -210,7 +211,7 @@ export default function LandingPage() {
 
                 <div className="pt-8 border-t border-border mt-8 flex items-center justify-between text-[11px] text-muted-foreground/80">
                   <span className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">lock</span>
+                    <Lock aria-hidden="true" className="w-[14px] h-[14px]" />
                     Server-side processing
                   </span>
                   <span>Never stored or trained</span>
