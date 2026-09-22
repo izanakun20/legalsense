@@ -1,6 +1,6 @@
 import React from "react";
 
-export const DISCLAIMER_TEXT = "LegalSense provides AI-assisted analysis, not formal legal counsel. Data is never used for training.";
+export const DISCLAIMER_TEXT = "This is general information, not legal advice. Consult a licensed attorney for your situation.";
 
 export function Disclaimer({ className = "" }: { className?: string }) {
   return (
