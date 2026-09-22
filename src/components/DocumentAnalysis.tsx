@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DocumentInput } from "./DocumentInput";
 import { getUserSafeErrorMessage } from "@/lib/errors";
-import { Info, Search, Download, FileText, ArrowRight } from "lucide-react";
+import { Info, Search, Download, FileText, ArrowRight, AlertTriangle } from "lucide-react";
 import { AiOutput } from "./AiOutput";
 import { USE_CASES } from "@/lib/product/use-cases";
 import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
@@ -243,12 +243,16 @@ export function DocumentAnalysis({ documentText }: { documentText: string }) {
               <div className="w-8 h-8 border-4 border-secondary/30 border-t-secondary rounded-full animate-spin mb-4" />
               <p className="text-[13px] uppercase tracking-wider font-semibold">Analyzing Legal Constructs...</p>
             </div>
-          ) : error ? (
-            <div className="p-6 rounded-[12px] bg-destructive/10 text-destructive border border-destructive/20 flex gap-3">
-              <p>{error}</p>
-            </div>
           ) : (
-            renderHighlightedText()
+            <>
+              {error && (
+                <div className="mb-6 p-4 rounded-[12px] bg-destructive/10 text-destructive border border-destructive/20 flex gap-3 text-[14px]">
+                  <AlertTriangle className="w-5 h-5 shrink-0" />
+                  <p>{error}</p>
+                </div>
+              )}
+              {renderHighlightedText()}
+            </>
           )}
         </div>
       </div>
