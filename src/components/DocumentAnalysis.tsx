@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable max-lines */
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,8 +12,8 @@ import { AiOutput } from "./AiOutput";
 import { ClauseCard } from "./ClauseCard";
 import { USE_CASES } from "@/lib/product/use-cases";
 import { DISCLAIMER_TEXT } from "@/lib/product/disclaimer";
-
 import { GuardMeta } from "@/lib/guard/quote-verifier";
+import { detectPII, PiiMatch } from "@/lib/pii-detector";
 
 type Clause = {
   category: string;
@@ -64,8 +65,25 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
   const [isAnalyzingClauses, setIsAnalyzingClauses] = useState(false);
   const [hasFetchedClauses, setHasFetchedClauses] = useState(false);
 
+  const [piiMatches, setPiiMatches] = useState<PiiMatch[] | null>(null);
+  const [hasAcknowledgedPii, setHasAcknowledgedPii] = useState(false);
+
   useEffect(() => {
     const analyze = async () => {
+      // PII check before fetching
+      if (!hasAcknowledgedPii) {
+        const matches = detectPII(documentText);
+        if (matches.length > 0) {
+          setPiiMatches(matches);
+          setIsAnalyzing(false);
+          setAnnouncement("Personally Identifiable Information detected in the document. Please review.");
+          return;
+        } else {
+          setHasAcknowledgedPii(true);
+        }
+      }
+
+      setIsAnalyzing(true);
       setError(null);
       setAnnouncement("Analyzing document, please wait.");
       try {
@@ -91,7 +109,7 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
       }
     };
     analyze();
-  }, [documentText]);
+  }, [documentText, hasAcknowledgedPii]);
 
   useEffect(() => {
     const requiresClauses = ['highlight', 'options', 'actionable', 'attorney'].includes(activeTab);
@@ -265,7 +283,51 @@ export function DocumentAnalysis({ documentText, initialTab }: { documentText: s
           </span>
         </div>
         <div className="p-6 md:p-8 lg:p-12 overflow-y-auto flex-1">
-          {isAnalyzing ? (
+          {piiMatches && !hasAcknowledgedPii ? (
+            <div className="flex flex-col h-full items-center justify-center text-center max-w-lg mx-auto space-y-6">
+              <div className="w-16 h-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center border border-destructive/20">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-serif text-foreground mb-2">Sensitive Information Detected</h3>
+                <p className="text-muted-foreground text-[14.5px] leading-relaxed">
+                  We found potential Personally Identifiable Information (PII) in your document. Please verify before sending to the AI.
+                </p>
+              </div>
+              
+              <div className="bg-muted/30 border border-border rounded-xl p-4 w-full text-left max-h-[200px] overflow-y-auto custom-scrollbar">
+                <ul className="space-y-3">
+                  {piiMatches.map((match, i) => (
+                    <li key={i} className="flex flex-col text-[13px]">
+                      <span className="font-semibold text-foreground uppercase tracking-wider text-[11px] opacity-70">{match.type}</span>
+                      <span className="font-mono text-muted-foreground mt-0.5">{match.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex w-full gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 rounded-[8px]"
+                  onClick={() => {
+                    // Navigate back or just cancel
+                    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+                    window.location.href = '/workspace';
+                  }}
+                >
+                  Cancel Analysis
+                </Button>
+                <Button 
+                  variant="default"
+                  className="flex-1 rounded-[8px]"
+                  onClick={() => setHasAcknowledgedPii(true)}
+                >
+                  Proceed Anyway
+                </Button>
+              </div>
+            </div>
+          ) : isAnalyzing ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <div className="w-8 h-8 border-4 border-secondary/30 border-t-secondary rounded-full animate-spin mb-4" />
               <p className="text-[13px] uppercase tracking-wider font-semibold">Analyzing Legal Constructs...</p>
