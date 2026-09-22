@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = Buffer.from(new Uint8Array(arrayBuffer));
     
     const text = await parseFileBuffer(buffer, file.name, file.type);
     
