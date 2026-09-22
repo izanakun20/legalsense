@@ -2,7 +2,6 @@ import 'server-only';
 import { GoogleGenAI } from "@google/genai";
 import { jsonrepair } from 'jsonrepair';
 import { z } from 'zod';
-import crypto from 'crypto';
 
 // Ensure the API key exists or will be provided in environment
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
@@ -20,8 +19,12 @@ const responseCache = new Map<string, CacheEntry>();
 const MAX_CACHE_SIZE = 20;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-function getCacheKey(prompt: string, modelId: string): string {
-  return crypto.createHash('sha256').update(`${modelId}:${prompt}`).digest('hex');
+async function getCacheKey(prompt: string, modelId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`${modelId}:${prompt}`);
+  const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -62,7 +65,7 @@ export async function generateStructuredResponse<T>(
     throw new Error("GEMINI_API_KEY is not configured.");
   }
   
-  const cacheKey = getCacheKey(prompt, modelId);
+  const cacheKey = await getCacheKey(prompt, modelId);
   if (responseCache.has(cacheKey)) {
     const entry = responseCache.get(cacheKey)!;
     if (Date.now() < entry.expiry) {

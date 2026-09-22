@@ -18,15 +18,18 @@ const clausesSchema = z.object({
   }))
 });
 
+type Clause = z.infer<typeof clausesSchema>['clauses'][0];
+
 const requestSchema = z.object({
   documentText: z.string().min(1).max(200000, "Document exceeds the maximum allowed length of 200,000 characters.")
 });
 
 export const maxDuration = 10;
+export const runtime = 'edge';
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+    const ip = req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1';
     if (await isRateLimited(`analyze:${ip}`, RATE_LIMITS.ANALYZE)) {
       return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
@@ -67,14 +70,18 @@ export async function POST(req: Request) {
       if (finalResult.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
     }
 
-    // Process clause detection sequentially to avoid hitting rate limits too quickly
-    const allClauses = [];
-    for (const chunk of chunks) {
-      const result = await generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema);
+    // Process clause detection in parallel for efficiency
+    const allClauses: Clause[] = [];
+    
+    const chunkResults = await Promise.all(chunks.map(chunk => 
+      generateGuardedResponse(CLAUSE_DETECTION_PROMPT(chunk), clausesSchema)
+    ));
+    
+    chunkResults.forEach((result) => {
       if (result.forbiddenPhraseReplaced) guard.forbiddenPhraseReplaced = true;
       
       // Verify quotes
-      result.data.clauses.forEach((clause, index) => {
+      result.data.clauses.forEach((clause: Clause, index: number) => {
         if (clause.quote && !verifyQuote(clause.quote, documentText)) {
           clause.quote = "Quote omitted because it wasn't an exact match in the text.";
           guard.unverifiedQuoteCount++;
@@ -83,7 +90,7 @@ export async function POST(req: Request) {
       });
       
       allClauses.push(...result.data.clauses);
-    }
+    });
 
     const responseData: { summary: string; clauses: Record<string, unknown>[]; guard?: GuardMeta } = {
       summary: finalSummary,

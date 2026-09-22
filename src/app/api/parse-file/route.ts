@@ -8,7 +8,7 @@ export const maxDuration = 10;
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+    const ip = req.headers.get('x-real-ip') ?? req.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1';
     if (await isRateLimited(`parse-file:${ip}`, RATE_LIMITS.PARSE_FILE)) {
       return NextResponse.json({ error: 'Lots of people are using LegalSense right now. Please try again in about 30 seconds.' }, { status: 429, headers: { 'Retry-After': '30' } });
     }
