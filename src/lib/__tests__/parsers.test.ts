@@ -7,7 +7,7 @@ import path from 'path';
 const testDataDir = path.join(process.cwd(), 'test_data');
 const getFixture = (filename: string) => fs.readFileSync(path.join(testDataDir, filename));
 
-vi.mock('pdf-parse', () => ({
+vi.mock('pdf-parse/lib/pdf-parse.js', () => ({
   default: vi.fn().mockResolvedValue({ numpages: 1, text: "COMMERCIAL LEASE AGREEMENT text." })
 }));
 

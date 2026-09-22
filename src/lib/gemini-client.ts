@@ -136,7 +136,6 @@ export async function generateStructuredResponse<T>(
       
       return validData;
     } catch (error) {
-      console.error("Gemini API Error in structured output:", error);
       attempt++;
       if (attempt >= 2) {
         throw new Error(`Failed to generate valid structured output after 2 attempts. Error: ${error instanceof Error ? error.message : 'Unknown'}`);

@@ -2,9 +2,10 @@
 
 This rule captures critical edge cases and workarounds discovered while building and deploying Next.js applications on Vercel.
 
-## 1. `pdf-parse` Configuration
-- **Issue**: `pdf-parse` relies on dynamic requires for `pdf.worker.js` which causes fatal Turbopack/Webpack build errors (`Module not found: Can't resolve './pdf.worker.js'`). Newer forks (e.g., `2.x`) also break due to missing native Canvas bindings.
-- **Rule**: Always use the stable `pdf-parse@1.1.1`. To prevent Next.js from crashing during the build step, you **MUST** add `serverExternalPackages: ['pdf-parse']` to `next.config.ts` (or `next.config.js`).
+## 1. `pdf-parse` Configuration and Runtime Errors
+- **Webpack Issue**: `pdf-parse` relies on dynamic requires for `pdf.worker.js` causing fatal Turbopack/Webpack errors. Always use `pdf-parse@1.1.1` and add `serverExternalPackages: ['pdf-parse']` to `next.config.ts`.
+- **Runtime/Test Issue**: Importing `pdf-parse` directly (`import pdfParse from 'pdf-parse'`) will crash in tests or strict environments because its `index.js` attempts to access `fs.existsSync('./test/data/05-versions-space.pdf')`.
+- **Rule**: Bypass `index.js` entirely by importing the core module directly: `import pdfParse from 'pdf-parse/lib/pdf-parse.js';`. When mocking in Vitest, mock the exact subpath `'pdf-parse/lib/pdf-parse.js'`.
 
 ## 2. TypeScript & Zod Errors in API Routes
 - **Issue**: Strict TypeScript in Next.js throws build errors (`Property 'errors' does not exist on type 'ZodError<unknown>'`) when checking `error instanceof z.ZodError` in `catch` blocks.

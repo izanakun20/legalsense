@@ -1,4 +1,5 @@
 import * as mammoth from 'mammoth';
+// @ts-expect-error: Subpath import lacks type declarations, but it's identical to the main module
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import { MAX_UPLOAD_SIZE, MAX_PDF_PAGES } from './constants';
 
@@ -9,8 +10,7 @@ export async function parsePdf(buffer: Buffer): Promise<string> {
   let data;
   try {
     data = await pdfParse(buffer);
-  } catch (error) {
-    console.error("PDF Parse error:", error);
+  } catch {
     throw new Error('File is corrupted or improperly formatted. Please ensure it is a valid text-based document.');
   }
 

@@ -99,7 +99,6 @@ export async function POST(req: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    console.error("API Analyze Error:", error);
     const safeMsg = getUserSafeErrorMessage(error, "Failed to analyze document.");
     return NextResponse.json({ error: safeMsg }, { status: 500 });
   }

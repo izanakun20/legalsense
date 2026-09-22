@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
 import { AlertTriangle, Clock, DollarSign, Eye, ArrowRight, Focus, MessageCircle, Scale, Lock } from 'lucide-react';
@@ -93,10 +94,10 @@ export default function LandingPage() {
               <Eye aria-hidden="true" className="w-[18px] h-[18px]" />
               <span>Explore The Folio</span>
             </a>
-            <a href="#sandbox" className={buttonVariants({ variant: "secondary", size: "lg", className: "rounded-full shadow-sm flex items-center gap-2" })}>
+            <Link href="/workspace" className={buttonVariants({ variant: "secondary", size: "lg", className: "rounded-full shadow-sm flex items-center gap-2" })}>
               <span>Test Instant Clarity</span>
               <ArrowRight aria-hidden="true" className="text-muted-foreground w-[16px] h-[16px]" />
-            </a>
+            </Link>
           </div>
         </section>
 
