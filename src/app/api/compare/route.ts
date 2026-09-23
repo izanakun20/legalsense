@@ -20,7 +20,7 @@ const compareSchema = z.object({
   }))
 });
 
-export const maxDuration = 10;
+export const maxDuration = 60;
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {

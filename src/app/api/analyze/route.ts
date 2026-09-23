@@ -26,7 +26,7 @@ const requestSchema = z.object({
   analysisType: z.enum(['summary', 'clauses', 'all']).optional().default('all')
 });
 
-export const maxDuration = 10;
+export const maxDuration = 60;
 export const runtime = 'nodejs';
 
 async function mapWithConcurrency<T, R>(

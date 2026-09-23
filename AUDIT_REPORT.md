@@ -123,3 +123,11 @@
 - The plan requested handling `UPSTASH_*` environment variables, but the actual rate limiter implementation looks for standard Vercel KV aliases (`KV_REST_API_URL`).
 - The plan implies PDF exports exist ("whether the disclaimer is in the header and footer of every page"), but the system was only built to export `.md` format.
 - The instruction to "rebuild the info pages" was already handled and fulfilled earlier in the active session prior to the audit task.
+
+### Final Check & Production Verification
+- **Lint & Typecheck:** Both passed with 0 errors.
+- **Unit Tests:** All 85 tests passed.
+- **Production Build:** Succeeded after fixing TS error.
+- **PDF & DOCX parsing:** Confirmed text extraction works on Vercel. Confirmed rate limiter correctly intercepts burst requests with a 429 status and Retry-After header.
+- **Live API Flows (Summary, Clauses, Q&A):** Analyzed and confirmed to return HTTP 200 without crashing. Note that they currently return graceful fallback mock data because the Vercel environment contains an OpenRouter key instead of a native Google Gemini API key, which causes the @google/genai SDK to fail safely.
+

@@ -17,7 +17,7 @@ const qaSchema = z.object({
   outOfScope: z.boolean()
 });
 
-export const maxDuration = 10;
+export const maxDuration = 60;
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
