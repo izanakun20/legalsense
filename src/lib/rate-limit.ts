@@ -60,8 +60,9 @@ export async function isRateLimited(identifier: string, maxRequests: number): Pr
     try {
       const { success } = await ratelimit.limit(identifier);
       return !success; // True if limited
-    } catch {
-      return false; // Fail open to not break app if Redis is unreachable
+    } catch (error) {
+      logger.error('Redis rate limit check failed, falling back to in-memory', error instanceof Error ? error : new Error(String(error)));
+      // Do not return false here; allow it to fall through to the in-memory fallback below
     }
   }
 
