@@ -21,7 +21,7 @@ const compareSchema = z.object({
 });
 
 export const maxDuration = 10;
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {

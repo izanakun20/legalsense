@@ -27,7 +27,7 @@ const requestSchema = z.object({
 });
 
 export const maxDuration = 10;
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 async function mapWithConcurrency<T, R>(
   items: T[],
