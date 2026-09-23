@@ -17,34 +17,18 @@ export const RATE_LIMITS = {
 
 let fallbackWarningLogged = false;
 
-export let debugDiagnostics: any = { redis: false, init: "none", urlLen: 0, tokenLen: 0, envs: {} };
-
 try {
-  debugDiagnostics.envs = {
-    KV_REST_API_URL: !!process.env.KV_REST_API_URL,
-    KV_REST_API_TOKEN: !!process.env.KV_REST_API_TOKEN,
-    UPSTASH_REDIS_REST_URL: !!process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: !!process.env.UPSTASH_REDIS_REST_TOKEN
-  };
-  
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-    debugDiagnostics.init = "manual (KV)";
-    debugDiagnostics.urlLen = process.env.KV_REST_API_URL.length;
-    debugDiagnostics.tokenLen = process.env.KV_REST_API_TOKEN.length;
     redis = new Redis({
       url: process.env.KV_REST_API_URL,
       token: process.env.KV_REST_API_TOKEN,
     });
   } else if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    debugDiagnostics.init = "manual (UPSTASH)";
-    debugDiagnostics.urlLen = process.env.UPSTASH_REDIS_REST_URL.length;
-    debugDiagnostics.tokenLen = process.env.UPSTASH_REDIS_REST_TOKEN.length;
     redis = new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL,
       token: process.env.UPSTASH_REDIS_REST_TOKEN,
     });
   }
-  debugDiagnostics.redis = !!redis;
 } catch {
   // Failed to initialize Upstash Redis rate limiter
 }
@@ -71,19 +55,12 @@ function getRateLimiter(maxRequests: number): Ratelimit | null {
 }
 
 export async function isRateLimited(identifier: string, maxRequests: number): Promise<boolean> {
-  if (identifier === "DEBUG_TRIGGER") {
-    throw new Error(JSON.stringify(debugDiagnostics));
-  }
   const ratelimit = getRateLimiter(maxRequests);
   if (ratelimit) {
     try {
       const { success } = await ratelimit.limit(identifier);
       return !success; // True if limited
-    } catch (e) {
-      debugDiagnostics.identifier = identifier;
-      debugDiagnostics.config = `${maxRequests} per 1 h`;
-      const errStr = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-      debugDiagnostics.error = errStr.substring(0, 300);
+    } catch {
       return false; // Fail open to not break app if Redis is unreachable
     }
   }
